@@ -1,6 +1,6 @@
-# Stitch Me App / `stitch-me-up`
+# 🩹 Stitch Me Up / `stitch-me-up`
 
-`stitch-me-up` is a Rust image composition engine for combining multiple images into one final canvas using deterministic layout rules.
+`stitch-me-up` is the 🩹 Stitch Me Up image composition engine for combining multiple images into one final canvas using deterministic layout rules.
 
 This project is intentionally about composition, not panorama stitching or computer vision. The core library operates on decoded RGBA buffers and is meant to stay portable across CLI, WASM, backend, and future native/mobile adapters.
 

@@ -1,6 +1,6 @@
-# `stitch-cli`
+# 🩹 `stitch-cli`
 
-Command-line wrapper for the `stitch-me-up` image composition engine.
+Command-line wrapper for the 🩹 `stitch-me-up` image composition engine.
 
 ## Example
 

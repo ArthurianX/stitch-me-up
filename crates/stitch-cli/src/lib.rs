@@ -15,8 +15,8 @@ pub use color::parse_rgba_color;
 #[command(
     name = "stitch-me-up",
     version,
-    about = "Combine multiple images into a single canvas",
-    long_about = "Combine local PNG or JPEG images into one composed PNG using predictable layout rules."
+    about = "🩹 Combine multiple images into a single canvas",
+    long_about = "🩹 Stitch Me Up combines local PNG or JPEG images into one composed PNG using predictable layout rules."
 )]
 pub struct Cli {
     #[command(subcommand)]
