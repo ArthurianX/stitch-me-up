@@ -1,0 +1,17 @@
+[package]
+name = "stitch-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "CLI for the Stitch Me App image composition engine"
+
+[[bin]]
+name = "stitch-me-up"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap.workspace = true
+stitch-core = { path = "../stitch-core" }

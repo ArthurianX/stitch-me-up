@@ -1,0 +1,193 @@
+mod helpers;
+
+use helpers::solid_image;
+use stitch_core::{
+    plan_layout, Alignment, ComposeError, ComposeOptions, Insets, LayoutKind, ResizeMode, RgbaColor,
+};
+
+#[test]
+fn rejects_fewer_than_two_images() {
+    let images = vec![solid_image(1, 1, [0, 0, 0, 255])];
+
+    let error = plan_layout(&images, &ComposeOptions::default()).unwrap_err();
+
+    assert!(matches!(error, ComposeError::NotEnoughImages));
+}
+
+#[test]
+fn rejects_invalid_pixel_buffer_lengths() {
+    let mut image = solid_image(1, 1, [0, 0, 0, 255]);
+    image.pixels.pop();
+    let images = vec![solid_image(1, 1, [255, 0, 0, 255]), image];
+
+    let error = plan_layout(&images, &ComposeOptions::default()).unwrap_err();
+
+    assert!(matches!(
+        error,
+        ComposeError::InvalidPixelBuffer {
+            index: 1,
+            expected: 4,
+            actual: 3,
+        }
+    ));
+}
+
+#[test]
+fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
+    let images = vec![
+        solid_image(10, 4, [255, 0, 0, 255]),
+        solid_image(6, 8, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        spacing: 3,
+        padding: Insets {
+            top: 2,
+            right: 4,
+            bottom: 6,
+            left: 8,
+        },
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("vertical plan");
+
+    assert_eq!(plan.width, 22);
+    assert_eq!(plan.height, 23);
+    assert_eq!(plan.placed_images.len(), 2);
+    assert_eq!(plan.placed_images[0].x, 8);
+    assert_eq!(plan.placed_images[0].y, 2);
+    assert_eq!(plan.placed_images[1].x, 10);
+    assert_eq!(plan.placed_images[1].y, 9);
+}
+
+#[test]
+fn plans_horizontal_stack_with_end_alignment() {
+    let images = vec![
+        solid_image(4, 8, [255, 0, 0, 255]),
+        solid_image(6, 3, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::HorizontalStack,
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::End,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("horizontal plan");
+
+    assert_eq!(plan.width, 14);
+    assert_eq!(plan.height, 10);
+    assert_eq!(plan.placed_images[0].x, 1);
+    assert_eq!(plan.placed_images[0].y, 1);
+    assert_eq!(plan.placed_images[1].x, 7);
+    assert_eq!(plan.placed_images[1].y, 6);
+}
+
+#[test]
+fn fit_to_same_width_resizes_height_in_layout() {
+    let images = vec![
+        solid_image(4, 2, [255, 0, 0, 255]),
+        solid_image(2, 6, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        spacing: 0,
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::FitToSameWidth,
+    };
+
+    let plan = plan_layout(&images, &options).expect("same-width plan");
+
+    assert_eq!(plan.width, 4);
+    assert_eq!(plan.height, 14);
+    assert_eq!(plan.placed_images[0].width, 4);
+    assert_eq!(plan.placed_images[0].height, 2);
+    assert_eq!(plan.placed_images[1].width, 4);
+    assert_eq!(plan.placed_images[1].height, 12);
+}
+
+#[test]
+fn fit_to_same_height_resizes_width_in_layout() {
+    let images = vec![
+        solid_image(10, 10, [255, 0, 0, 255]),
+        solid_image(6, 3, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::HorizontalStack,
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::FitToSameHeight,
+    };
+
+    let plan = plan_layout(&images, &options).expect("same-height plan");
+
+    assert_eq!(plan.width, 34);
+    assert_eq!(plan.height, 12);
+    assert_eq!(plan.placed_images[0].width, 10);
+    assert_eq!(plan.placed_images[1].width, 20);
+    assert_eq!(plan.placed_images[1].height, 10);
+}
+
+#[test]
+fn before_after_uses_horizontal_flow() {
+    let images = vec![
+        solid_image(2, 5, [255, 0, 0, 255]),
+        solid_image(3, 3, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 4,
+        padding: Insets::all(2),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("before-after plan");
+
+    assert_eq!(plan.width, 13);
+    assert_eq!(plan.height, 9);
+    assert_eq!(plan.placed_images[0].x, 2);
+    assert_eq!(plan.placed_images[1].x, 8);
+}
+
+#[test]
+fn grid_reports_zero_column_error() {
+    let images = vec![
+        solid_image(1, 1, [255, 0, 0, 255]),
+        solid_image(1, 1, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 0 },
+        ..ComposeOptions::default()
+    };
+
+    let error = plan_layout(&images, &options).unwrap_err();
+
+    assert!(matches!(error, ComposeError::InvalidGridColumns));
+}
+
+#[test]
+fn grid_reports_unsupported_layout_for_now() {
+    let images = vec![
+        solid_image(1, 1, [255, 0, 0, 255]),
+        solid_image(1, 1, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 2 },
+        ..ComposeOptions::default()
+    };
+
+    let error = plan_layout(&images, &options).unwrap_err();
+
+    assert!(matches!(error, ComposeError::UnsupportedLayout("Grid")));
+}

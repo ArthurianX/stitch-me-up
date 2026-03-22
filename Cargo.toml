@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "crates/stitch-core",
+    "crates/stitch-cli",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+version = "0.1.0"
+authors = ["Codex"]
+rust-version = "1.75"
+
+[workspace.dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+thiserror = "1.0"
+clap = { version = "4.5", features = ["derive"] }
