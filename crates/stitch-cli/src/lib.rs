@@ -48,8 +48,27 @@ pub struct CombineArgs {
     #[arg(long, default_value_t = 0, help = "Space between images in pixels")]
     pub spacing: u32,
 
-    #[arg(long, default_value_t = 0, help = "Uniform padding around the canvas")]
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Uniform padding around the canvas, overridden per side by the --padding-* flags"
+    )]
     pub padding: u32,
+
+    #[arg(long, help = "Padding above the canvas, overriding --padding")]
+    pub padding_top: Option<u32>,
+
+    #[arg(
+        long,
+        help = "Padding to the right of the canvas, overriding --padding"
+    )]
+    pub padding_right: Option<u32>,
+
+    #[arg(long, help = "Padding below the canvas, overriding --padding")]
+    pub padding_bottom: Option<u32>,
+
+    #[arg(long, help = "Padding to the left of the canvas, overriding --padding")]
+    pub padding_left: Option<u32>,
 
     #[arg(
         long,
@@ -127,12 +146,13 @@ pub fn combine(args: CombineArgs) -> Result<()> {
     let options = ComposeOptions {
         layout: layout_kind(args.layout, args.columns),
         spacing: args.spacing,
-        padding: Insets {
-            top: args.padding,
-            right: args.padding,
-            bottom: args.padding,
-            left: args.padding,
-        },
+        padding: insets(
+            args.padding,
+            args.padding_top,
+            args.padding_right,
+            args.padding_bottom,
+            args.padding_left,
+        ),
         background: args.background,
         alignment: alignment(args.alignment),
         resize_mode: resize_mode(args.resize_mode),
@@ -168,6 +188,21 @@ pub fn resize_mode(mode: ResizeModeArg) -> ResizeMode {
         ResizeModeArg::None => ResizeMode::None,
         ResizeModeArg::FitToSameWidth => ResizeMode::FitToSameWidth,
         ResizeModeArg::FitToSameHeight => ResizeMode::FitToSameHeight,
+    }
+}
+
+pub fn insets(
+    uniform: u32,
+    top: Option<u32>,
+    right: Option<u32>,
+    bottom: Option<u32>,
+    left: Option<u32>,
+) -> Insets {
+    Insets {
+        top: top.unwrap_or(uniform),
+        right: right.unwrap_or(uniform),
+        bottom: bottom.unwrap_or(uniform),
+        left: left.unwrap_or(uniform),
     }
 }
 
@@ -261,6 +296,85 @@ mod tests {
     }
 
     #[test]
+    fn per_side_padding_overrides_uniform_padding() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--padding",
+            "4",
+            "--padding-left",
+            "20",
+            "--padding-top",
+            "0",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.padding, 4);
+                assert_eq!(args.padding_top, Some(0));
+                assert_eq!(args.padding_right, None);
+                assert_eq!(args.padding_bottom, None);
+                assert_eq!(args.padding_left, Some(20));
+
+                let padding = insets(
+                    args.padding,
+                    args.padding_top,
+                    args.padding_right,
+                    args.padding_bottom,
+                    args.padding_left,
+                );
+
+                assert_eq!(
+                    padding,
+                    Insets {
+                        top: 0,
+                        right: 4,
+                        bottom: 4,
+                        left: 20,
+                    }
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn per_side_padding_defaults_to_uniform_padding() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--padding",
+            "7",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.padding_top, None);
+                assert_eq!(args.padding_right, None);
+                assert_eq!(args.padding_bottom, None);
+                assert_eq!(args.padding_left, None);
+
+                let padding = insets(
+                    args.padding,
+                    args.padding_top,
+                    args.padding_right,
+                    args.padding_bottom,
+                    args.padding_left,
+                );
+
+                assert_eq!(padding, Insets::all(7));
+            }
+        }
+    }
+
+    #[test]
     fn rejects_before_after_with_more_than_two_inputs() {
         let result = combine(CombineArgs {
             inputs: vec!["a.png".into(), "b.png".into(), "c.png".into()],
@@ -268,6 +382,10 @@ mod tests {
             layout: LayoutArg::BeforeAfter,
             spacing: 0,
             padding: 0,
+            padding_top: None,
+            padding_right: None,
+            padding_bottom: None,
+            padding_left: None,
             background: RgbaColor::WHITE,
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,
@@ -289,6 +407,10 @@ mod tests {
             layout: LayoutArg::Grid,
             spacing: 0,
             padding: 0,
+            padding_top: None,
+            padding_right: None,
+            padding_bottom: None,
+            padding_left: None,
             background: RgbaColor::WHITE,
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,

@@ -25,6 +25,12 @@ stitch-me-up combine --layout grid --columns 2 --spacing 8 --output grid.png a.p
 stitch-me-up combine --layout before-after --spacing 12 --output pair.png before.png after.png
 ```
 
+## Per-Side Padding Example
+
+```bash
+stitch-me-up combine --layout vertical --padding 8 --padding-left 32 --output out.png a.png b.png
+```
+
 ## Notes
 
 - The CLI expects decoded-image support from the sibling `stitch-core` crate.

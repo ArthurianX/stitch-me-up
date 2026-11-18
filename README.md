@@ -67,6 +67,7 @@ stitch-me-up combine \
   --layout vertical \
   --spacing 16 \
   --padding 24 \
+  --padding-left 32 \
   --background "#ffffff" \
   --output out.png \
   a.png b.png c.png
