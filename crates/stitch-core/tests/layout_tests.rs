@@ -177,17 +177,135 @@ fn grid_reports_zero_column_error() {
 }
 
 #[test]
-fn grid_reports_unsupported_layout_for_now() {
+fn plans_grid_row_major_with_track_sizes() {
     let images = vec![
-        solid_image(1, 1, [255, 0, 0, 255]),
-        solid_image(1, 1, [0, 255, 0, 255]),
+        solid_image(10, 4, [255, 0, 0, 255]),
+        solid_image(6, 8, [0, 255, 0, 255]),
+        solid_image(4, 10, [0, 0, 255, 255]),
+        solid_image(8, 6, [255, 255, 0, 255]),
     ];
     let options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 2 },
-        ..ComposeOptions::default()
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
     };
 
-    let error = plan_layout(&images, &options).unwrap_err();
+    let plan = plan_layout(&images, &options).expect("grid plan");
 
-    assert!(matches!(error, ComposeError::UnsupportedLayout("Grid")));
+    assert_eq!(plan.width, 22);
+    assert_eq!(plan.height, 22);
+    assert_eq!(plan.placed_images.len(), 4);
+
+    let placements: Vec<(u32, u32, u32, u32)> = plan
+        .placed_images
+        .iter()
+        .map(|placed| (placed.x, placed.y, placed.width, placed.height))
+        .collect();
+
+    assert_eq!(
+        placements,
+        vec![(1, 1, 10, 4), (13, 1, 6, 8), (1, 11, 4, 10), (13, 11, 8, 6),]
+    );
+}
+
+#[test]
+fn grid_with_more_columns_than_images_uses_one_row() {
+    let images = vec![
+        solid_image(4, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+        solid_image(6, 2, [0, 0, 255, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 5 },
+        spacing: 3,
+        padding: Insets::all(2),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("single-row grid plan");
+
+    let tracks = 4 + 2 + 6;
+    let gaps = 2 * options.spacing;
+    let padding = options.padding.left + options.padding.right;
+
+    assert_eq!(plan.width, tracks + gaps + padding);
+    assert_eq!(
+        plan.height,
+        2 + options.padding.top + options.padding.bottom
+    );
+    assert!(plan
+        .placed_images
+        .iter()
+        .all(|placed| placed.y == options.padding.top));
+}
+
+#[test]
+fn grid_alignment_applies_within_column() {
+    // The second column's track is 4 wide, so the 2-wide image at index 1 has slack.
+    let images = vec![
+        solid_image(4, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+        solid_image(4, 2, [0, 0, 255, 255]),
+        solid_image(4, 2, [255, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 2 },
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("centered grid plan");
+
+    assert_eq!(plan.placed_images[0].x, options.padding.left);
+    assert_eq!(
+        plan.placed_images[1].x,
+        options.padding.left + 4 + options.spacing + 1
+    );
+
+    let plan = plan_layout(
+        &images,
+        &ComposeOptions {
+            alignment: Alignment::End,
+            ..options
+        },
+    )
+    .expect("end-aligned grid plan");
+
+    assert_eq!(
+        plan.placed_images[1].x,
+        options.padding.left + 4 + options.spacing + 2
+    );
+}
+
+#[test]
+fn single_row_grid_matches_horizontal_flow() {
+    let images = vec![
+        solid_image(4, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+    ];
+    let grid_options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 2 },
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+    };
+    let horizontal_options = ComposeOptions {
+        layout: LayoutKind::HorizontalStack,
+        ..grid_options
+    };
+
+    let grid_plan = plan_layout(&images, &grid_options).expect("grid plan");
+    let horizontal_plan = plan_layout(&images, &horizontal_options).expect("horizontal plan");
+
+    assert_eq!(grid_plan, horizontal_plan);
 }

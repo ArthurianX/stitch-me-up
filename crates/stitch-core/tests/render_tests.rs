@@ -46,6 +46,58 @@ fn renders_background_and_stacked_pixels() {
 }
 
 #[test]
+fn renders_grid_cells_and_background() {
+    let images = vec![
+        solid_image(1, 1, [255, 0, 0, 255]),
+        solid_image(1, 1, [0, 255, 0, 255]),
+        solid_image(1, 1, [0, 0, 255, 255]),
+        solid_image(1, 1, [255, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 2 },
+        spacing: 1,
+        padding: Insets::all(1),
+        background: RgbaColor {
+            r: 10,
+            g: 20,
+            b: 30,
+            a: 255,
+        },
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+    };
+
+    let composed = compose(&images, &options).expect("compose grid");
+
+    assert_eq!(composed.width, 5);
+    assert_eq!(composed.height, 5);
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 1),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 3, 1),
+        [0, 255, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 3),
+        [0, 0, 255, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 3, 3),
+        [255, 255, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 2, 2),
+        [10, 20, 30, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [10, 20, 30, 255]
+    );
+}
+
+#[test]
 fn centers_smaller_images_on_vertical_layout() {
     let images = vec![
         solid_image(3, 1, [255, 0, 0, 255]),
