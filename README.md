@@ -56,6 +56,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
 - Options: spacing, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
+- Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG
 - Output format: PNG
 
