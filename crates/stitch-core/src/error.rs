@@ -14,6 +14,8 @@ pub enum ComposeError {
     UnsupportedLayout(&'static str),
     #[error("grid layouts require at least one column")]
     InvalidGridColumns,
+    #[error("before-after layout requires exactly two images")]
+    BeforeAfterRequiresTwo,
     #[error("image dimension overflow while calculating layout")]
     DimensionOverflow,
     #[error("output coordinates overflowed during rendering")]

@@ -15,16 +15,23 @@ pub fn plan_layout(
 ) -> Result<CanvasPlan, ComposeError> {
     validate_images(images)?;
 
-    let sizes = resolve_sizes(images, options.resize_mode)?;
-
     match options.layout {
-        LayoutKind::VerticalStack => plan_vertical(&sizes, options),
-        LayoutKind::HorizontalStack | LayoutKind::BeforeAfter => plan_horizontal(&sizes, options),
+        LayoutKind::VerticalStack => {
+            plan_vertical(&resolve_sizes(images, options.resize_mode)?, options)
+        }
+        LayoutKind::HorizontalStack => {
+            plan_horizontal(&resolve_sizes(images, options.resize_mode)?, options)
+        }
+        LayoutKind::BeforeAfter => plan_before_after(images, options),
         LayoutKind::Grid { columns } => {
             if columns == 0 {
                 return Err(ComposeError::InvalidGridColumns);
             }
-            Err(ComposeError::UnsupportedLayout("Grid"))
+            plan_grid(
+                &resolve_sizes(images, options.resize_mode)?,
+                options,
+                columns,
+            )
         }
     }
 }
@@ -229,6 +236,110 @@ fn plan_horizontal(
         height: canvas_height,
         placed_images,
     })
+}
+
+/// Scales both panes to the shared tallest height, ignoring `options.resize_mode`.
+fn plan_before_after(
+    images: &[InputImage],
+    options: &ComposeOptions,
+) -> Result<CanvasPlan, ComposeError> {
+    if images.len() != 2 {
+        return Err(ComposeError::BeforeAfterRequiresTwo);
+    }
+
+    let target_height = images.iter().map(|image| image.height).max().unwrap_or(0);
+
+    let sizes = images
+        .iter()
+        .map(|image| scale_to_height(image.width, image.height, target_height))
+        .collect::<Result<Vec<ResolvedSize>, ComposeError>>()?;
+
+    plan_horizontal(&sizes, options)
+}
+
+fn plan_grid(
+    sizes: &[ResolvedSize],
+    options: &ComposeOptions,
+    columns: u32,
+) -> Result<CanvasPlan, ComposeError> {
+    if columns == 0 {
+        return Err(ComposeError::InvalidGridColumns);
+    }
+
+    let requested = usize::try_from(columns).map_err(|_| ComposeError::InvalidGridColumns)?;
+    let columns = requested.min(sizes.len()).max(1);
+    let rows = sizes.len().div_ceil(columns);
+
+    let mut column_widths = vec![0u32; columns];
+    let mut row_heights = vec![0u32; rows];
+
+    for (index, size) in sizes.iter().enumerate() {
+        let column = index % columns;
+        let row = index / columns;
+
+        column_widths[column] = column_widths[column].max(size.width);
+        row_heights[row] = row_heights[row].max(size.height);
+    }
+
+    let content_width = sum_dimensions(column_widths.iter().copied(), options.spacing)?;
+    let content_height = sum_dimensions(row_heights.iter().copied(), options.spacing)?;
+
+    let canvas_width =
+        padded_dimension(content_width, options.padding.left, options.padding.right)?;
+    let canvas_height =
+        padded_dimension(content_height, options.padding.top, options.padding.bottom)?;
+
+    let column_offsets = track_offsets(&column_widths, options.padding.left, options.spacing)?;
+    let row_offsets = track_offsets(&row_heights, options.padding.top, options.spacing)?;
+
+    let mut placed_images = Vec::with_capacity(sizes.len());
+
+    for (index, size) in sizes.iter().enumerate() {
+        let column = index % columns;
+        let row = index / columns;
+
+        let x = column_offsets[column]
+            .checked_add(aligned_offset(
+                column_widths[column],
+                size.width,
+                options.alignment,
+            )?)
+            .ok_or(ComposeError::DimensionOverflow)?;
+
+        placed_images.push(PlacedImage {
+            index,
+            x,
+            y: row_offsets[row],
+            width: size.width,
+            height: size.height,
+        });
+    }
+
+    Ok(CanvasPlan {
+        width: canvas_width,
+        height: canvas_height,
+        placed_images,
+    })
+}
+
+fn track_offsets(sizes: &[u32], leading: u32, spacing: u32) -> Result<Vec<u32>, ComposeError> {
+    let mut offsets = Vec::with_capacity(sizes.len());
+    let mut offset = leading;
+
+    for (index, size) in sizes.iter().copied().enumerate() {
+        offsets.push(offset);
+
+        offset = offset
+            .checked_add(size)
+            .ok_or(ComposeError::DimensionOverflow)?;
+        if index + 1 < sizes.len() {
+            offset = offset
+                .checked_add(spacing)
+                .ok_or(ComposeError::DimensionOverflow)?;
+        }
+    }
+
+    Ok(offsets)
 }
 
 fn padded_dimension(value: u32, leading: u32, trailing: u32) -> Result<u32, ComposeError> {

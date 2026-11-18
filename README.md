@@ -1,6 +1,6 @@
-# Stitch Me App / `stitch-me-up`
+# 🩹 Stitch Me Up / `stitch-me-up`
 
-`stitch-me-up` is a Rust image composition engine for combining multiple images into one final canvas using deterministic layout rules.
+`stitch-me-up` is the 🩹 Stitch Me Up image composition engine for combining multiple images into one final canvas using deterministic layout rules.
 
 This project is intentionally about composition, not panorama stitching or computer vision. The core library operates on decoded RGBA buffers and is meant to stay portable across CLI, WASM, backend, and future native/mobile adapters.
 
@@ -14,7 +14,7 @@ The repository now contains:
 - tests covering layout, rendering, image I/O, and CLI argument handling
 - baseline community and GitHub repository files
 
-`Grid` is still reserved but not implemented yet. `BeforeAfter` currently uses the same flow as horizontal composition.
+`Grid` is implemented with row-major placement and auto-sized column and row tracks. `BeforeAfter` takes exactly two images, scales both to their shared tallest height while preserving aspect ratio, and places them side by side, ignoring `resize_mode`.
 
 ## Workspace
 
@@ -25,9 +25,6 @@ stitch-me-up/
 │   ├── stitch-core/
 │   └── stitch-cli/
 ├── .github/
-├── examples/
-├── assets/
-├── docs/
 └── README.md
 ```
 
@@ -56,9 +53,10 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 
 ## Current Features
 
-- Layouts: `VerticalStack`, `HorizontalStack`, `BeforeAfter`
-- Options: spacing, padding, background color, alignment
+- Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
+- Options: spacing, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
+- Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG
 - Output format: PNG
 
@@ -83,4 +81,4 @@ cargo fmt
 cargo test
 ```
 
-See [CONTRIBUTING.md](/Users/arthurianxxx/Documents/stitch-me-up/CONTRIBUTING.md) for contribution guidance and [SECURITY.md](/Users/arthurianxxx/Documents/stitch-me-up/SECURITY.md) for vulnerability reporting expectations.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance and [SECURITY.md](SECURITY.md) for vulnerability reporting expectations.

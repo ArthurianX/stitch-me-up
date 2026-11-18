@@ -1,6 +1,6 @@
-# `stitch-cli`
+# 🩹 `stitch-cli`
 
-Command-line wrapper for the `stitch-me-up` image composition engine.
+Command-line wrapper for the 🩹 `stitch-me-up` image composition engine.
 
 ## Example
 
@@ -11,6 +11,18 @@ stitch-me-up combine \
   --background "#ffffff" \
   --output out.png \
   a.png b.png c.png
+```
+
+## Grid Example
+
+```bash
+stitch-me-up combine --layout grid --columns 2 --spacing 8 --output grid.png a.png b.png c.png d.png
+```
+
+## Before-After Example
+
+```bash
+stitch-me-up combine --layout before-after --spacing 12 --output pair.png before.png after.png
 ```
 
 ## Notes

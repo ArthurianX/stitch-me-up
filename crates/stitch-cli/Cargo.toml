@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "CLI for the Stitch Me App image composition engine"
+description = "CLI for the 🩹 Stitch Me Up image composition engine"
 
 [[bin]]
 name = "stitch-me-up"
