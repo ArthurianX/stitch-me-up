@@ -14,7 +14,7 @@ The repository now contains:
 - tests covering layout, rendering, image I/O, and CLI argument handling
 - baseline community and GitHub repository files
 
-`Grid` is implemented with row-major placement and auto-sized column and row tracks. `BeforeAfter` currently uses the same flow as horizontal composition.
+`Grid` is implemented with row-major placement and auto-sized column and row tracks. `BeforeAfter` takes exactly two images, scales both to their shared tallest height while preserving aspect ratio, and places them side by side, ignoring `resize_mode`.
 
 ## Workspace
 
@@ -54,7 +54,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 ## Current Features
 
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
-- Options: spacing, padding, background color, alignment
+- Options: spacing, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
 - Input formats: PNG and JPEG
 - Output format: PNG

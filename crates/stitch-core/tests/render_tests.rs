@@ -98,6 +98,47 @@ fn renders_grid_cells_and_background() {
 }
 
 #[test]
+fn renders_before_after_with_equal_pane_heights() {
+    let images = vec![
+        solid_image(2, 2, [255, 0, 0, 255]),
+        solid_image(1, 4, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 1,
+        padding: Insets::all(0),
+        background: RgbaColor::TRANSPARENT,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+
+    let composed = compose(&images, &options).expect("compose before-after");
+
+    assert_eq!(composed.width, 6);
+    assert_eq!(composed.height, 4);
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 3, 3),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 5, 0),
+        [0, 255, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 5, 3),
+        [0, 255, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 4, 0),
+        [0, 0, 0, 0]
+    );
+}
+
+#[test]
 fn centers_smaller_images_on_vertical_layout() {
     let images = vec![
         solid_image(3, 1, [255, 0, 0, 255]),

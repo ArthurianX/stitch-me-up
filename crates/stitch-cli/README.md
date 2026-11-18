@@ -19,6 +19,12 @@ stitch-me-up combine \
 stitch-me-up combine --layout grid --columns 2 --spacing 8 --output grid.png a.png b.png c.png d.png
 ```
 
+## Before-After Example
+
+```bash
+stitch-me-up combine --layout before-after --spacing 12 --output pair.png before.png after.png
+```
+
 ## Notes
 
 - The CLI expects decoded-image support from the sibling `stitch-core` crate.

@@ -15,16 +15,23 @@ pub fn plan_layout(
 ) -> Result<CanvasPlan, ComposeError> {
     validate_images(images)?;
 
-    let sizes = resolve_sizes(images, options.resize_mode)?;
-
     match options.layout {
-        LayoutKind::VerticalStack => plan_vertical(&sizes, options),
-        LayoutKind::HorizontalStack | LayoutKind::BeforeAfter => plan_horizontal(&sizes, options),
+        LayoutKind::VerticalStack => {
+            plan_vertical(&resolve_sizes(images, options.resize_mode)?, options)
+        }
+        LayoutKind::HorizontalStack => {
+            plan_horizontal(&resolve_sizes(images, options.resize_mode)?, options)
+        }
+        LayoutKind::BeforeAfter => plan_before_after(images, options),
         LayoutKind::Grid { columns } => {
             if columns == 0 {
                 return Err(ComposeError::InvalidGridColumns);
             }
-            plan_grid(&sizes, options, columns)
+            plan_grid(
+                &resolve_sizes(images, options.resize_mode)?,
+                options,
+                columns,
+            )
         }
     }
 }
@@ -229,6 +236,25 @@ fn plan_horizontal(
         height: canvas_height,
         placed_images,
     })
+}
+
+/// Scales both panes to the shared tallest height, ignoring `options.resize_mode`.
+fn plan_before_after(
+    images: &[InputImage],
+    options: &ComposeOptions,
+) -> Result<CanvasPlan, ComposeError> {
+    if images.len() != 2 {
+        return Err(ComposeError::BeforeAfterRequiresTwo);
+    }
+
+    let target_height = images.iter().map(|image| image.height).max().unwrap_or(0);
+
+    let sizes = images
+        .iter()
+        .map(|image| scale_to_height(image.width, image.height, target_height))
+        .collect::<Result<Vec<ResolvedSize>, ComposeError>>()?;
+
+    plan_horizontal(&sizes, options)
 }
 
 fn plan_grid(

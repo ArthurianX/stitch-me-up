@@ -138,7 +138,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
 }
 
 #[test]
-fn before_after_uses_horizontal_flow() {
+fn before_after_equalizes_pane_heights() {
     let images = vec![
         solid_image(2, 5, [255, 0, 0, 255]),
         solid_image(3, 3, [0, 255, 0, 255]),
@@ -154,10 +154,97 @@ fn before_after_uses_horizontal_flow() {
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
 
-    assert_eq!(plan.width, 13);
+    assert_eq!(plan.width, 15);
     assert_eq!(plan.height, 9);
     assert_eq!(plan.placed_images[0].x, 2);
+    assert_eq!(plan.placed_images[0].y, 2);
+    assert_eq!(
+        (plan.placed_images[0].width, plan.placed_images[0].height),
+        (2, 5)
+    );
     assert_eq!(plan.placed_images[1].x, 8);
+    assert_eq!(plan.placed_images[1].y, 2);
+    assert_eq!(
+        (plan.placed_images[1].width, plan.placed_images[1].height),
+        (5, 5)
+    );
+}
+
+#[test]
+fn before_after_requires_exactly_two_images() {
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        ..ComposeOptions::default()
+    };
+
+    let three = vec![
+        solid_image(1, 1, [255, 0, 0, 255]),
+        solid_image(1, 1, [0, 255, 0, 255]),
+        solid_image(1, 1, [0, 0, 255, 255]),
+    ];
+    let error = plan_layout(&three, &options).unwrap_err();
+    assert!(matches!(error, ComposeError::BeforeAfterRequiresTwo));
+
+    let one = vec![solid_image(1, 1, [255, 0, 0, 255])];
+    let error = plan_layout(&one, &options).unwrap_err();
+    assert!(matches!(error, ComposeError::NotEnoughImages));
+}
+
+#[test]
+fn before_after_scales_shorter_pane_to_taller_height() {
+    let images = vec![
+        solid_image(4, 8, [255, 0, 0, 255]),
+        solid_image(6, 4, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("before-after plan");
+
+    assert_eq!(plan.width, 20);
+    assert_eq!(plan.height, 10);
+    assert_eq!(plan.placed_images[0].height, 8);
+    assert_eq!(plan.placed_images[1].height, 8);
+    assert_eq!(plan.placed_images[1].width, 12);
+
+    let placements: Vec<(u32, u32, u32, u32)> = plan
+        .placed_images
+        .iter()
+        .map(|placed| (placed.x, placed.y, placed.width, placed.height))
+        .collect();
+
+    assert_eq!(placements, vec![(1, 1, 4, 8), (7, 1, 12, 8)]);
+}
+
+#[test]
+fn before_after_ignores_resize_mode() {
+    let images = vec![
+        solid_image(4, 8, [255, 0, 0, 255]),
+        solid_image(6, 4, [0, 255, 0, 255]),
+    ];
+    let base = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 2,
+        padding: Insets::all(1),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+    };
+    let resized = ComposeOptions {
+        resize_mode: ResizeMode::FitToSameWidth,
+        ..base.clone()
+    };
+
+    let plain_plan = plan_layout(&images, &base).expect("before-after plan");
+    let resized_plan = plan_layout(&images, &resized).expect("before-after resized plan");
+
+    assert_eq!(resized_plan, plain_plan);
 }
 
 #[test]

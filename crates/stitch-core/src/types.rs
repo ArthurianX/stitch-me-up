@@ -2,7 +2,11 @@
 pub enum LayoutKind {
     VerticalStack,
     HorizontalStack,
-    Grid { columns: u32 },
+    Grid {
+        columns: u32,
+    },
+    /// Exactly two images, each scaled to the shared tallest height and placed side by side.
+    /// `ComposeOptions::resize_mode` is ignored for this layout.
     BeforeAfter,
 }
 

@@ -1,7 +1,7 @@
 use image::imageops::FilterType;
 
 use crate::error::ComposeError;
-use crate::types::{CanvasPlan, ComposeOptions, ComposedImage, InputImage, ResizeMode};
+use crate::types::{CanvasPlan, ComposeOptions, ComposedImage, InputImage};
 
 pub fn render(
     images: &[InputImage],
@@ -19,8 +19,7 @@ pub fn render(
 
     for placed in &plan.placed_images {
         let source = &images[placed.index];
-        let source_pixels =
-            prepare_pixels(source, placed.width, placed.height, options.resize_mode)?;
+        let source_pixels = prepare_pixels(source, placed.width, placed.height)?;
         blit_image(
             &mut pixels,
             plan.width,
@@ -50,22 +49,16 @@ fn prepare_pixels(
     image: &InputImage,
     target_width: u32,
     target_height: u32,
-    resize_mode: ResizeMode,
 ) -> Result<Vec<u8>, ComposeError> {
     if image.width == target_width && image.height == target_height {
         return Ok(image.pixels.clone());
     }
 
-    match resize_mode {
-        ResizeMode::None => Ok(image.pixels.clone()),
-        ResizeMode::FitToSameWidth | ResizeMode::FitToSameHeight => {
-            let rgba = image::RgbaImage::from_raw(image.width, image.height, image.pixels.clone())
-                .ok_or(ComposeError::DimensionOverflow)?;
-            let resized =
-                image::imageops::resize(&rgba, target_width, target_height, FilterType::Triangle);
-            Ok(resized.into_raw())
-        }
-    }
+    let rgba = image::RgbaImage::from_raw(image.width, image.height, image.pixels.clone())
+        .ok_or(ComposeError::DimensionOverflow)?;
+    let resized = image::imageops::resize(&rgba, target_width, target_height, FilterType::Triangle);
+
+    Ok(resized.into_raw())
 }
 
 fn blit_image(
