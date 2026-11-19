@@ -9,8 +9,8 @@ pub mod types;
 pub use compose::{compose, plan_layout};
 pub use error::ComposeError;
 pub use image_io::{load_image_from_path, save_png};
-pub use options::ComposeOptions;
+pub use options::{ComposeOptions, PaneStyle};
 pub use types::{
-    Alignment, CanvasPlan, ComposedImage, InputImage, Insets, LayoutKind, PlacedImage, ResizeMode,
-    RgbaColor,
+    Alignment, CanvasPlan, ComposedImage, Frame, InputImage, Insets, LayoutKind, PlacedImage,
+    ResizeMode, RgbaColor,
 };

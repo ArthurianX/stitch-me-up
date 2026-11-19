@@ -60,6 +60,25 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 - Input formats: PNG and JPEG
 - Output format: PNG
 
+## Decoration
+
+Pane decoration is drawn as an overlay inside each pane's placed rectangle, so layout
+math and `CanvasPlan` stay untouched.
+
+- Frames: `Frame { width, color }` paints an inset ring over the outer pixels of a pane
+  instead of shrinking its content, and its alpha composites with the background exactly
+  like image pixels.
+- Corner radius: a hard-edged rounded mask, computed with integer squared distances, no
+  antialiasing. The radius is clamped to half the smaller pane dimension; larger values
+  are not an error. Pixels outside the mask leave whatever was underneath (usually the
+  background) visible.
+- CLI flags: `--frame-width`, `--frame-color`, `--corner-radius`.
+
+```bash
+stitch-me-up combine --layout vertical --frame-width 4 --frame-color "#000000" \
+  --corner-radius 12 --output framed.png a.png b.png
+```
+
 ## CLI Example
 
 ```bash

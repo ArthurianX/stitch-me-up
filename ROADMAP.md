@@ -24,9 +24,9 @@ All items are core-only, add no dependencies, and must be covered by
 pixel-level tests. Decoration is drawn *inside* each pane's placed rectangle, so
 layout math and `CanvasPlan` stay unchanged.
 
-- [ ] Per-pane frame/border: inset ring drawn over the image, with its own color
+- [x] Per-pane frame/border: inset ring drawn over the image, with its own color
       and alpha
-- [ ] Per-pane corner radius: hard-edged rounded mask, composited over the
+- [x] Per-pane corner radius: hard-edged rounded mask, composited over the
       background
 - [ ] `BeforeAfter` divider: a stroke centered in the gap between panes
 

@@ -2,7 +2,8 @@ mod helpers;
 
 use helpers::solid_image;
 use stitch_core::{
-    plan_layout, Alignment, ComposeError, ComposeOptions, Insets, LayoutKind, ResizeMode, RgbaColor,
+    plan_layout, Alignment, ComposeError, ComposeOptions, Insets, LayoutKind, PaneStyle,
+    ResizeMode, RgbaColor,
 };
 
 #[test]
@@ -50,6 +51,7 @@ fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("vertical plan");
@@ -76,6 +78,7 @@ fn plans_horizontal_stack_with_end_alignment() {
         background: RgbaColor::WHITE,
         alignment: Alignment::End,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("horizontal plan");
@@ -101,6 +104,7 @@ fn fit_to_same_width_resizes_height_in_layout() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::FitToSameWidth,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("same-width plan");
@@ -126,6 +130,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::FitToSameHeight,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("same-height plan");
@@ -150,6 +155,7 @@ fn before_after_equalizes_pane_heights() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -203,6 +209,7 @@ fn before_after_scales_shorter_pane_to_taller_height() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -235,9 +242,11 @@ fn before_after_ignores_resize_mode() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
     let resized = ComposeOptions {
         resize_mode: ResizeMode::FitToSameWidth,
+        pane_style: PaneStyle::default(),
         ..base.clone()
     };
 
@@ -278,6 +287,7 @@ fn plans_grid_row_major_with_track_sizes() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("grid plan");
@@ -312,6 +322,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("single-row grid plan");
@@ -347,6 +358,7 @@ fn grid_alignment_applies_within_column() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let plan = plan_layout(&images, &options).expect("centered grid plan");
@@ -385,6 +397,7 @@ fn single_row_grid_matches_horizontal_flow() {
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
     let horizontal_options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,

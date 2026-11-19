@@ -77,6 +77,18 @@ impl RgbaColor {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Frame {
+    pub width: u32,
+    pub color: RgbaColor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct PaneStyle {
+    pub frame: Option<Frame>,
+    pub corner_radius: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposeOptions {
     pub layout: LayoutKind,
@@ -85,6 +97,7 @@ pub struct ComposeOptions {
     pub background: RgbaColor,
     pub alignment: Alignment,
     pub resize_mode: ResizeMode,
+    pub pane_style: PaneStyle,
 }
 
 impl Default for ComposeOptions {
@@ -96,6 +109,7 @@ impl Default for ComposeOptions {
             background: RgbaColor::WHITE,
             alignment: Alignment::Start,
             resize_mode: ResizeMode::None,
+            pane_style: PaneStyle::default(),
         }
     }
 }

@@ -1,7 +1,7 @@
 use image::imageops::FilterType;
 
 use crate::error::ComposeError;
-use crate::types::{CanvasPlan, ComposeOptions, ComposedImage, InputImage, PlacedImage};
+use crate::types::{CanvasPlan, ComposeOptions, ComposedImage, InputImage, PaneStyle, PlacedImage};
 
 pub fn render(
     images: &[InputImage],
@@ -20,7 +20,14 @@ pub fn render(
     for placed in &plan.placed_images {
         let source = &images[placed.index];
         let source_pixels = prepare_pixels(source, placed.width, placed.height)?;
-        blit_image(&mut pixels, plan.width, plan.height, placed, &source_pixels)?;
+        blit_image(
+            &mut pixels,
+            plan.width,
+            plan.height,
+            placed,
+            &source_pixels,
+            &options.pane_style,
+        )?;
     }
 
     Ok(ComposedImage {
@@ -58,7 +65,17 @@ fn blit_image(
     canvas_height: u32,
     placed: &PlacedImage,
     image_pixels: &[u8],
+    style: &PaneStyle,
 ) -> Result<(), ComposeError> {
+    // Undecorated panes keep the plain copy/blend path and never evaluate corner masks.
+    let decorated = style.frame.is_some() || style.corner_radius > 0;
+    let radius = style.corner_radius.min(placed.width.min(placed.height) / 2);
+    let frame_width = style.frame.map(|frame| frame.width).unwrap_or(0);
+    let frame_pixel = style
+        .frame
+        .map(|frame| frame.color.to_rgba())
+        .unwrap_or([0, 0, 0, 0]);
+
     for row in 0..placed.height {
         let canvas_row = placed
             .y
@@ -97,19 +114,101 @@ fn blit_image(
             .get_mut(dest_index..dest_end)
             .ok_or(ComposeError::CoordinateOverflow)?;
 
-        if source.chunks_exact(4).all(|pixel| pixel[3] == 255) {
-            destination.copy_from_slice(source);
+        if !decorated {
+            if source.chunks_exact(4).all(|pixel| pixel[3] == 255) {
+                destination.copy_from_slice(source);
+                continue;
+            }
+
+            for (destination_pixel, source_pixel) in
+                destination.chunks_exact_mut(4).zip(source.chunks_exact(4))
+            {
+                blend_pixel(destination_pixel, source_pixel);
+            }
+
             continue;
         }
 
-        for (destination_pixel, source_pixel) in
-            destination.chunks_exact_mut(4).zip(source.chunks_exact(4))
+        for (column, (destination_pixel, source_pixel)) in destination
+            .chunks_exact_mut(4)
+            .zip(source.chunks_exact(4))
+            .enumerate()
         {
+            let x = u32::try_from(column).map_err(|_| ComposeError::CoordinateOverflow)?;
+
+            if !inside_rounded(x, row, placed.width, placed.height, radius) {
+                continue;
+            }
+
+            let source_pixel =
+                if in_frame_ring(x, row, placed.width, placed.height, radius, frame_width) {
+                    &frame_pixel[..]
+                } else {
+                    source_pixel
+                };
+
             blend_pixel(destination_pixel, source_pixel);
         }
     }
 
     Ok(())
+}
+
+/// True when `(x, y)` is inside a hard-edged rounded rectangle, comparing the squared distance
+/// to the nearest corner center against `radius^2` in integer arithmetic.
+fn inside_rounded(x: u32, y: u32, width: u32, height: u32, radius: u32) -> bool {
+    if radius == 0 {
+        return true;
+    }
+
+    let dx = corner_distance(x, width, radius);
+    let dy = corner_distance(y, height, radius);
+    let radius = i64::from(radius);
+
+    dx * dx + dy * dy <= radius * radius
+}
+
+/// Distance along one axis from `position` to the nearest corner center.
+/// Callers guarantee `radius <= extent / 2`, which keeps that nearest-center distance
+/// symmetric, including when the radius is exactly half the extent.
+fn corner_distance(position: u32, extent: u32, radius: u32) -> i64 {
+    let position = i64::from(position);
+    let radius = i64::from(radius);
+    let far_center = i64::from(extent) - 1 - radius;
+
+    if position < radius {
+        radius - position
+    } else if position > far_center {
+        position - far_center
+    } else {
+        0
+    }
+}
+
+/// True when `(x, y)` belongs to the frame ring of `frame_width` pixels inside a rounded pane.
+fn in_frame_ring(x: u32, y: u32, width: u32, height: u32, radius: u32, frame_width: u32) -> bool {
+    if frame_width == 0 {
+        return false;
+    }
+
+    let inner_width = width.saturating_sub(frame_width.saturating_mul(2));
+    let inner_height = height.saturating_sub(frame_width.saturating_mul(2));
+
+    if inner_width == 0 || inner_height == 0 {
+        return true;
+    }
+
+    if x < frame_width || y < frame_width || x >= width - frame_width || y >= height - frame_width {
+        return true;
+    }
+
+    !inside_rounded(
+        x - frame_width,
+        y - frame_width,
+        inner_width,
+        inner_height,
+        radius.saturating_sub(frame_width),
+    )
 }
 
 /// Source-over compositing of straight (non-premultiplied) RGBA, rounded with integer math only.

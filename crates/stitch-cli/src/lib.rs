@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
-    compose, load_image_from_path, save_png, Alignment, ComposeOptions, Insets, LayoutKind,
-    ResizeMode, RgbaColor,
+    compose, load_image_from_path, save_png, Alignment, ComposeOptions, Frame, Insets, LayoutKind,
+    PaneStyle, ResizeMode, RgbaColor,
 };
 
 pub use color::parse_rgba_color;
@@ -90,6 +90,28 @@ pub struct CombineArgs {
         help = "Grid column count when layout is grid"
     )]
     pub columns: u32,
+
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Frame width in pixels drawn inside each image"
+    )]
+    pub frame_width: u32,
+
+    #[arg(
+        long,
+        default_value = "#000000",
+        value_parser = parse_rgba_color,
+        help = "Frame color as #RRGGBB or #RRGGBBAA"
+    )]
+    pub frame_color: RgbaColor,
+
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Corner radius in pixels applied to each image"
+    )]
+    pub corner_radius: u32,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -156,6 +178,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
         background: args.background,
         alignment: alignment(args.alignment),
         resize_mode: resize_mode(args.resize_mode),
+        pane_style: pane_style(args.frame_width, args.frame_color, args.corner_radius),
     };
 
     let composed = compose(&images, &options).context("failed to compose images")?;
@@ -203,6 +226,16 @@ pub fn insets(
         right: right.unwrap_or(uniform),
         bottom: bottom.unwrap_or(uniform),
         left: left.unwrap_or(uniform),
+    }
+}
+
+pub fn pane_style(frame_width: u32, frame_color: RgbaColor, corner_radius: u32) -> PaneStyle {
+    PaneStyle {
+        frame: (frame_width > 0).then_some(Frame {
+            width: frame_width,
+            color: frame_color,
+        }),
+        corner_radius,
     }
 }
 
@@ -390,6 +423,9 @@ mod tests {
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,
             columns: 2,
+            frame_width: 0,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 0,
         });
 
         assert!(result.is_err());
@@ -415,6 +451,9 @@ mod tests {
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,
             columns: 0,
+            frame_width: 0,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 0,
         });
 
         assert!(result.is_err());
@@ -449,6 +488,35 @@ mod tests {
         assert_eq!(alignment(AlignmentArg::Start), Alignment::Start);
         assert_eq!(alignment(AlignmentArg::Center), Alignment::Center);
         assert_eq!(alignment(AlignmentArg::End), Alignment::End);
+    }
+
+    #[test]
+    fn maps_pane_style_from_flags() {
+        let plain = pane_style(0, RgbaColor::WHITE, 6);
+        assert_eq!(
+            plain,
+            PaneStyle {
+                frame: None,
+                corner_radius: 6,
+            }
+        );
+
+        let framed = pane_style(4, parse_rgba_color("#11223344").unwrap(), 3);
+        assert_eq!(
+            framed,
+            PaneStyle {
+                frame: Some(Frame {
+                    width: 4,
+                    color: RgbaColor {
+                        r: 0x11,
+                        g: 0x22,
+                        b: 0x33,
+                        a: 0x44,
+                    },
+                }),
+                corner_radius: 3,
+            }
+        );
     }
 
     #[test]

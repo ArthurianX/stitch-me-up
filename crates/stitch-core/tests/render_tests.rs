@@ -3,8 +3,8 @@ mod helpers;
 use helpers::{pixel_at, solid_image};
 use stitch_core::render::render;
 use stitch_core::{
-    compose, Alignment, CanvasPlan, ComposeOptions, Insets, LayoutKind, PlacedImage, ResizeMode,
-    RgbaColor,
+    compose, Alignment, CanvasPlan, ComposeOptions, Frame, Insets, LayoutKind, PaneStyle,
+    PlacedImage, ResizeMode, RgbaColor,
 };
 
 #[test]
@@ -25,6 +25,7 @@ fn renders_background_and_stacked_pixels() {
         },
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose image");
@@ -69,6 +70,7 @@ fn renders_grid_cells_and_background() {
         },
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose grid");
@@ -114,6 +116,7 @@ fn renders_before_after_with_equal_pane_heights() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose before-after");
@@ -155,6 +158,7 @@ fn centers_smaller_images_on_vertical_layout() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose centered");
@@ -188,6 +192,7 @@ fn applies_fit_to_same_height_during_rendering() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::FitToSameHeight,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose same-height");
@@ -217,6 +222,7 @@ fn applies_fit_to_same_width_during_rendering() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::FitToSameWidth,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose same-width");
@@ -255,6 +261,7 @@ fn blends_semi_transparent_source_over_background() {
         },
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose blended");
@@ -289,6 +296,7 @@ fn fully_transparent_pixels_leave_background() {
         },
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose transparent");
@@ -316,6 +324,7 @@ fn semi_transparent_source_over_transparent_background_keeps_color() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose over transparent background");
@@ -359,6 +368,7 @@ fn overlapping_semi_transparent_planes_blend() {
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = render(&images, &plan, &options).expect("render overlapping planes");
@@ -387,6 +397,7 @@ fn low_alpha_blend_uses_exact_weighting() {
         },
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
     };
 
     let composed = compose(&images, &options).expect("compose low-alpha");
@@ -395,4 +406,265 @@ fn low_alpha_blend_uses_exact_weighting() {
         pixel_at(&composed.pixels, composed.width, 0, 0),
         [255, 255, 255, 25]
     );
+}
+
+fn red_and_filler(size: u32) -> Vec<stitch_core::InputImage> {
+    vec![
+        solid_image(size, size, [255, 0, 0, 255]),
+        solid_image(size, size, [0, 255, 0, 255]),
+    ]
+}
+
+fn pane_options(pane_style: PaneStyle, background: RgbaColor) -> ComposeOptions {
+    ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        spacing: 0,
+        padding: Insets::default(),
+        background,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style,
+    }
+}
+
+#[test]
+fn default_pane_style_keeps_existing_output() {
+    let images = vec![
+        solid_image(2, 1, [255, 0, 0, 255]),
+        solid_image(2, 1, [0, 255, 0, 255]),
+    ];
+    let plain = ComposeOptions::default();
+    let explicit = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        spacing: 0,
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle {
+            frame: None,
+            corner_radius: 0,
+        },
+    };
+
+    let composed = compose(&images, &plain).expect("compose undecorated");
+    let styled = compose(&images, &explicit).expect("compose explicit style");
+
+    assert_eq!(composed, styled);
+}
+
+#[test]
+fn corner_radius_masks_corner_pixels() {
+    let images = red_and_filler(4);
+    let options = pane_options(
+        PaneStyle {
+            frame: None,
+            corner_radius: 2,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose rounded pane");
+
+    for corner in [(0, 0), (3, 0), (0, 3), (3, 3)] {
+        assert_eq!(
+            pixel_at(&composed.pixels, composed.width, corner.0, corner.1),
+            [255, 255, 255, 255],
+            "corner {:?} should show the background",
+            corner
+        );
+    }
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 1),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 2, 1),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn corner_radius_is_symmetric() {
+    let images = red_and_filler(6);
+    let options = pane_options(
+        PaneStyle {
+            frame: None,
+            corner_radius: 3,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose fully rounded pane");
+
+    for corner in [(0, 0), (5, 0), (0, 5), (5, 5)] {
+        assert_eq!(
+            pixel_at(&composed.pixels, composed.width, corner.0, corner.1),
+            [255, 255, 255, 255],
+            "corner {:?} should show the background",
+            corner
+        );
+    }
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 3, 3),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn corner_radius_masks_all_four_corners() {
+    let images = red_and_filler(4);
+    let options = pane_options(
+        PaneStyle {
+            frame: None,
+            corner_radius: 1,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose rounded pane");
+
+    for corner in [(0, 0), (3, 0), (0, 3), (3, 3)] {
+        assert_eq!(
+            pixel_at(&composed.pixels, composed.width, corner.0, corner.1),
+            [255, 255, 255, 255],
+            "corner {:?} should show the background",
+            corner
+        );
+    }
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 1),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 2, 1),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn frame_draws_ring_inside_pane() {
+    let images = red_and_filler(5);
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 1,
+                color: RgbaColor {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 255,
+                },
+            }),
+            corner_radius: 0,
+        },
+        RgbaColor::TRANSPARENT,
+    );
+
+    let composed = compose(&images, &options).expect("compose framed pane");
+
+    for edge in [(0, 0), (4, 4), (2, 0)] {
+        assert_eq!(
+            pixel_at(&composed.pixels, composed.width, edge.0, edge.1),
+            [0, 0, 0, 255],
+            "ring pixel {:?} should be the frame color",
+            edge
+        );
+    }
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 2, 2),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn frame_alpha_composites_with_background() {
+    let images = red_and_filler(3);
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 1,
+                color: RgbaColor {
+                    r: 0,
+                    g: 0,
+                    b: 255,
+                    a: 128,
+                },
+            }),
+            corner_radius: 0,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose framed pane");
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [127, 127, 255, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 1),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn corner_radius_is_clamped() {
+    let images = red_and_filler(3);
+    let options = pane_options(
+        PaneStyle {
+            frame: None,
+            corner_radius: 100,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose over-clamped pane");
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [255, 255, 255, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 1, 1),
+        [255, 0, 0, 255]
+    );
+}
+
+#[test]
+fn frame_covers_pane_when_frame_exceeds_size() {
+    let images = red_and_filler(3);
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 5,
+                color: RgbaColor {
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 255,
+                },
+            }),
+            corner_radius: 0,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let composed = compose(&images, &options).expect("compose oversized frame");
+
+    for y in 0..3 {
+        for x in 0..3 {
+            assert_eq!(
+                pixel_at(&composed.pixels, composed.width, x, y),
+                [0, 0, 0, 255],
+                "({},{}) should be frame color",
+                x,
+                y
+            );
+        }
+    }
 }
