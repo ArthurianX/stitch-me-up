@@ -10,8 +10,13 @@ resolver = "2"
 edition = "2021"
 license = "MIT"
 version = "0.1.0"
-authors = ["Codex"]
+authors = ["Arthur Kovacs <kovacs.arthur.kraid@gmail.com>"]
 rust-version = "1.75"
+repository = "https://github.com/ArthurianX/stitch-me-up"
+homepage = "https://github.com/ArthurianX/stitch-me-up"
+readme = "README.md"
+keywords = ["image", "collage", "composition", "layout", "png"]
+categories = ["multimedia::images", "graphics"]
 
 [workspace.dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

@@ -44,7 +44,7 @@ Decision log:
 - [x] `stitch-wasm` adapter exposing `compose` to JavaScript
 - [x] `examples/` with runnable samples used by the README
 - [x] `docs/` with the API reference and a layout cookbook
-- [ ] Published crate metadata (`repository`, `readme`, keywords, categories)
+- [x] Published crate metadata (`repository`, `readme`, keywords, categories)
 
 ## 0.4 — Layout expressiveness
 

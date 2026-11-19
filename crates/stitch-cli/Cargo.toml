@@ -6,6 +6,12 @@ license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 description = "CLI for the 🩹 Stitch Me Up image composition engine"
+documentation = "https://docs.rs/stitch-cli"
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"   # per-crate readme; workspace-level inheritance resolves against the workspace root
+keywords.workspace = true
+categories.workspace = true
 
 [[bin]]
 name = "stitch-me-up"
@@ -14,4 +20,4 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 clap.workspace = true
-stitch-core = { path = "../stitch-core" }
+stitch-core = { path = "../stitch-core", version = "0.1.0" }
