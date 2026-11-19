@@ -28,7 +28,7 @@ layout math and `CanvasPlan` stay unchanged.
       and alpha
 - [x] Per-pane corner radius: hard-edged rounded mask, composited over the
       background
-- [ ] `BeforeAfter` divider: a stroke centered in the gap between panes
+- [x] `BeforeAfter` divider: a stroke centered in the gap between panes
 
 Decision log:
 

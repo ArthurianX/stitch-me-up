@@ -16,6 +16,10 @@ pub enum ComposeError {
     InvalidGridColumns,
     #[error("before-after layout requires exactly two images")]
     BeforeAfterRequiresTwo,
+    #[error("a divider is only supported by the before-after layout")]
+    DividerRequiresBeforeAfter,
+    #[error("divider width {width} exceeds the {gap}px gap between panes; increase spacing")]
+    DividerTooWide { width: u32, gap: u32 },
     #[error("image dimension overflow while calculating layout")]
     DimensionOverflow,
     #[error("output coordinates overflowed during rendering")]

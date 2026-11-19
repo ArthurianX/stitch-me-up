@@ -34,7 +34,7 @@ stitch-me-up combine --layout vertical --padding 8 --padding-left 32 --output ou
 ## Decoration Example
 
 ```bash
-stitch-me-up combine --layout horizontal --frame-width 4 --frame-color "#000000" --corner-radius 12 --output framed.png a.png b.png
+stitch-me-up combine --layout before-after --spacing 12 --frame-width 4 --frame-color "#000000" --corner-radius 12 --divider-width 4 --divider-color "#ffffff" --output pair.png before.png after.png
 ```
 
 ## Notes

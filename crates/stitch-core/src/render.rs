@@ -1,7 +1,9 @@
 use image::imageops::FilterType;
 
 use crate::error::ComposeError;
-use crate::types::{CanvasPlan, ComposeOptions, ComposedImage, InputImage, PaneStyle, PlacedImage};
+use crate::types::{
+    CanvasPlan, ComposeOptions, ComposedImage, Divider, InputImage, PaneStyle, PlacedImage,
+};
 
 pub fn render(
     images: &[InputImage],
@@ -30,11 +32,74 @@ pub fn render(
         )?;
     }
 
+    if let Some(divider) = options.divider {
+        if divider.width > 0 && plan.placed_images.len() >= 2 {
+            let first = &plan.placed_images[0];
+            let second = &plan.placed_images[1];
+            let gap_start = first
+                .x
+                .checked_add(first.width)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+            let gap = second.x.saturating_sub(gap_start);
+
+            draw_divider(&mut pixels, plan.width, plan.height, first, gap, &divider)?;
+        }
+    }
+
     Ok(ComposedImage {
         width: plan.width,
         height: plan.height,
         pixels,
     })
+}
+
+/// Centers the divider in the gap between the two panes and composites it pixel by pixel.
+fn draw_divider(
+    canvas: &mut [u8],
+    canvas_width: u32,
+    canvas_height: u32,
+    first: &PlacedImage,
+    gap: u32,
+    divider: &Divider,
+) -> Result<(), ComposeError> {
+    let offset = gap.saturating_sub(divider.width) / 2;
+    let start_x = first
+        .x
+        .checked_add(first.width)
+        .and_then(|x| x.checked_add(offset))
+        .ok_or(ComposeError::CoordinateOverflow)?;
+    let divider_pixel = divider.color.to_rgba();
+
+    for row in 0..first.height {
+        let canvas_row = first
+            .y
+            .checked_add(row)
+            .ok_or(ComposeError::CoordinateOverflow)?;
+        if canvas_row >= canvas_height {
+            return Err(ComposeError::CoordinateOverflow);
+        }
+
+        for column in 0..divider.width {
+            let x = start_x
+                .checked_add(column)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+            if x >= canvas_width {
+                return Err(ComposeError::CoordinateOverflow);
+            }
+
+            let index = linear_rgba_index(canvas_width, x, canvas_row)?;
+            let end = index
+                .checked_add(4)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+            let pixel = canvas
+                .get_mut(index..end)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+
+            blend_pixel(pixel, &divider_pixel);
+        }
+    }
+
+    Ok(())
 }
 
 fn fill_background(pixels: &mut [u8], background: [u8; 4]) {

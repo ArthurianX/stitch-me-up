@@ -2,7 +2,7 @@ mod helpers;
 
 use helpers::solid_image;
 use stitch_core::{
-    plan_layout, Alignment, ComposeError, ComposeOptions, Insets, LayoutKind, PaneStyle,
+    plan_layout, Alignment, ComposeError, ComposeOptions, Divider, Insets, LayoutKind, PaneStyle,
     ResizeMode, RgbaColor,
 };
 
@@ -52,6 +52,7 @@ fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("vertical plan");
@@ -79,6 +80,7 @@ fn plans_horizontal_stack_with_end_alignment() {
         alignment: Alignment::End,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("horizontal plan");
@@ -105,6 +107,7 @@ fn fit_to_same_width_resizes_height_in_layout() {
         alignment: Alignment::Start,
         resize_mode: ResizeMode::FitToSameWidth,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("same-width plan");
@@ -131,6 +134,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::FitToSameHeight,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("same-height plan");
@@ -156,6 +160,7 @@ fn before_after_equalizes_pane_heights() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -210,6 +215,7 @@ fn before_after_scales_shorter_pane_to_taller_height() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -243,10 +249,12 @@ fn before_after_ignores_resize_mode() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
     let resized = ComposeOptions {
         resize_mode: ResizeMode::FitToSameWidth,
         pane_style: PaneStyle::default(),
+        divider: None,
         ..base.clone()
     };
 
@@ -288,6 +296,7 @@ fn plans_grid_row_major_with_track_sizes() {
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("grid plan");
@@ -323,6 +332,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("single-row grid plan");
@@ -359,6 +369,7 @@ fn grid_alignment_applies_within_column() {
         alignment: Alignment::Center,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
 
     let plan = plan_layout(&images, &options).expect("centered grid plan");
@@ -398,6 +409,7 @@ fn single_row_grid_matches_horizontal_flow() {
         alignment: Alignment::Start,
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
+        divider: None,
     };
     let horizontal_options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,
@@ -408,4 +420,126 @@ fn single_row_grid_matches_horizontal_flow() {
     let horizontal_plan = plan_layout(&images, &horizontal_options).expect("horizontal plan");
 
     assert_eq!(grid_plan, horizontal_plan);
+}
+
+#[test]
+fn divider_requires_before_after() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        divider: Some(Divider {
+            width: 4,
+            color: RgbaColor::WHITE,
+        }),
+        ..ComposeOptions::default()
+    };
+
+    let error = plan_layout(&images, &options).unwrap_err();
+
+    assert!(matches!(error, ComposeError::DividerRequiresBeforeAfter));
+}
+
+#[test]
+fn divider_wider_than_gap_is_rejected() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 2,
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: Some(Divider {
+            width: 4,
+            color: RgbaColor::WHITE,
+        }),
+    };
+
+    let error = plan_layout(&images, &options).unwrap_err();
+
+    assert!(matches!(
+        error,
+        ComposeError::DividerTooWide { width: 4, gap: 2 }
+    ));
+}
+
+#[test]
+fn divider_equal_to_gap_is_accepted() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 2,
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: Some(Divider {
+            width: 2,
+            color: RgbaColor::WHITE,
+        }),
+    };
+
+    let plan = plan_layout(&images, &options).expect("divider fitting the gap");
+
+    assert_eq!(plan.width, 10);
+    assert_eq!(plan.height, 4);
+    assert_eq!(plan.placed_images[0].x, 0);
+    assert_eq!(plan.placed_images[1].x, 6);
+    assert_eq!(
+        plan.placed_images[1].x - (plan.placed_images[0].x + plan.placed_images[0].width),
+        2
+    );
+}
+
+#[test]
+fn zero_width_divider_is_allowed_without_spacing() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    let before_after = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: 0,
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: Some(Divider {
+            width: 0,
+            color: RgbaColor::WHITE,
+        }),
+    };
+
+    let plan = plan_layout(&images, &before_after).expect("zero-width divider");
+
+    assert_eq!(plan.width, 8);
+    assert_eq!(plan.placed_images[1].x, 4);
+
+    let no_divider = ComposeOptions {
+        divider: None,
+        ..before_after
+    };
+    assert_eq!(plan_layout(&images, &no_divider).expect("no divider"), plan);
+
+    // The layout check keys on `Some(_)` alone, so a zero-width divider still errors elsewhere.
+    let vertical = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        ..before_after
+    };
+    assert!(matches!(
+        plan_layout(&images, &vertical).unwrap_err(),
+        ComposeError::DividerRequiresBeforeAfter
+    ));
 }

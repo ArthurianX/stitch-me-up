@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
-    compose, load_image_from_path, save_png, Alignment, ComposeOptions, Frame, Insets, LayoutKind,
-    PaneStyle, ResizeMode, RgbaColor,
+    compose, load_image_from_path, save_png, Alignment, ComposeOptions, Divider, Frame, Insets,
+    LayoutKind, PaneStyle, ResizeMode, RgbaColor,
 };
 
 pub use color::parse_rgba_color;
@@ -112,6 +112,21 @@ pub struct CombineArgs {
         help = "Corner radius in pixels applied to each image"
     )]
     pub corner_radius: u32,
+
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Divider width in pixels between before-after panes"
+    )]
+    pub divider_width: u32,
+
+    #[arg(
+        long,
+        default_value = "#000000",
+        value_parser = parse_rgba_color,
+        help = "Divider color as #RRGGBB or #RRGGBBAA"
+    )]
+    pub divider_color: RgbaColor,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -179,6 +194,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
         alignment: alignment(args.alignment),
         resize_mode: resize_mode(args.resize_mode),
         pane_style: pane_style(args.frame_width, args.frame_color, args.corner_radius),
+        divider: divider(args.divider_width, args.divider_color),
     };
 
     let composed = compose(&images, &options).context("failed to compose images")?;
@@ -237,6 +253,10 @@ pub fn pane_style(frame_width: u32, frame_color: RgbaColor, corner_radius: u32) 
         }),
         corner_radius,
     }
+}
+
+pub fn divider(width: u32, color: RgbaColor) -> Option<Divider> {
+    (width > 0).then_some(Divider { width, color })
 }
 
 #[cfg(test)]
@@ -426,6 +446,8 @@ mod tests {
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,
+            divider_width: 0,
+            divider_color: RgbaColor::WHITE,
         });
 
         assert!(result.is_err());
@@ -454,6 +476,8 @@ mod tests {
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,
+            divider_width: 0,
+            divider_color: RgbaColor::WHITE,
         });
 
         assert!(result.is_err());
@@ -516,6 +540,25 @@ mod tests {
                 }),
                 corner_radius: 3,
             }
+        );
+    }
+
+    #[test]
+    fn maps_divider_from_flags() {
+        assert_eq!(divider(0, RgbaColor::WHITE), None);
+
+        let stroke = divider(4, parse_rgba_color("#11223344").unwrap());
+        assert_eq!(
+            stroke,
+            Some(Divider {
+                width: 4,
+                color: RgbaColor {
+                    r: 0x11,
+                    g: 0x22,
+                    b: 0x33,
+                    a: 0x44,
+                },
+            })
         );
     }
 

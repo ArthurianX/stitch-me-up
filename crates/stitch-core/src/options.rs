@@ -1,1 +1,1 @@
-pub use crate::types::{ComposeOptions, PaneStyle};
+pub use crate::types::{ComposeOptions, Divider, PaneStyle};

@@ -72,11 +72,15 @@ math and `CanvasPlan` stay untouched.
   antialiasing. The radius is clamped to half the smaller pane dimension; larger values
   are not an error. Pixels outside the mask leave whatever was underneath (usually the
   background) visible.
-- CLI flags: `--frame-width`, `--frame-color`, `--corner-radius`.
+- Divider: an optional stroke for `BeforeAfter` only, centered inside the `spacing` gap
+  between the two panes and spanning their shared height. It must fit inside the gap,
+  otherwise planning reports the gap width, and its alpha composites like everything else.
+- CLI flags: `--frame-width`, `--frame-color`, `--corner-radius`, `--divider-width`,
+  `--divider-color`.
 
 ```bash
-stitch-me-up combine --layout vertical --frame-width 4 --frame-color "#000000" \
-  --corner-radius 12 --output framed.png a.png b.png
+stitch-me-up combine --layout before-after --spacing 12 --frame-width 4 --frame-color "#000000" \
+  --corner-radius 12 --divider-width 4 --divider-color "#ffffff" --output pair.png before.png after.png
 ```
 
 ## CLI Example

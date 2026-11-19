@@ -89,6 +89,12 @@ pub struct PaneStyle {
     pub corner_radius: u32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Divider {
+    pub width: u32,
+    pub color: RgbaColor,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposeOptions {
     pub layout: LayoutKind,
@@ -98,6 +104,7 @@ pub struct ComposeOptions {
     pub alignment: Alignment,
     pub resize_mode: ResizeMode,
     pub pane_style: PaneStyle,
+    pub divider: Option<Divider>,
 }
 
 impl Default for ComposeOptions {
@@ -110,6 +117,7 @@ impl Default for ComposeOptions {
             alignment: Alignment::Start,
             resize_mode: ResizeMode::None,
             pane_style: PaneStyle::default(),
+            divider: None,
         }
     }
 }

@@ -15,6 +15,10 @@ pub fn plan_layout(
 ) -> Result<CanvasPlan, ComposeError> {
     validate_images(images)?;
 
+    if options.divider.is_some() && !matches!(options.layout, LayoutKind::BeforeAfter) {
+        return Err(ComposeError::DividerRequiresBeforeAfter);
+    }
+
     match options.layout {
         LayoutKind::VerticalStack => {
             plan_vertical(&resolve_sizes(images, options.resize_mode)?, options)
@@ -254,7 +258,24 @@ fn plan_before_after(
         .map(|image| scale_to_height(image.width, image.height, target_height))
         .collect::<Result<Vec<ResolvedSize>, ComposeError>>()?;
 
-    plan_horizontal(&sizes, options)
+    let plan = plan_horizontal(&sizes, options)?;
+
+    if let Some(divider) = options.divider {
+        let gap_start = plan.placed_images[0]
+            .x
+            .checked_add(plan.placed_images[0].width)
+            .ok_or(ComposeError::DimensionOverflow)?;
+        let gap = plan.placed_images[1].x.saturating_sub(gap_start);
+
+        if divider.width > gap {
+            return Err(ComposeError::DividerTooWide {
+                width: divider.width,
+                gap,
+            });
+        }
+    }
+
+    Ok(plan)
 }
 
 fn plan_grid(
