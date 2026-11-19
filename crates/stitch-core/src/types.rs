@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutKind {
     VerticalStack,
@@ -49,6 +51,14 @@ impl Default for Insets {
     }
 }
 
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum HexColorError {
+    #[error("expected color in #RRGGBB or #RRGGBBAA format")]
+    InvalidLength,
+    #[error("invalid hex color component")]
+    InvalidComponent,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RgbaColor {
     pub r: u8,
@@ -75,6 +85,28 @@ impl RgbaColor {
     pub const fn to_rgba(self) -> [u8; 4] {
         [self.r, self.g, self.b, self.a]
     }
+
+    /// Parses `#RRGGBB`, `RRGGBB`, `#RRGGBBAA`, or `RRGGBBAA`.
+    pub fn parse_hex(input: &str) -> Result<Self, HexColorError> {
+        let value = input.strip_prefix('#').unwrap_or(input);
+
+        let (rgb, alpha) = match value.len() {
+            6 => (&value[0..6], None),
+            8 => (&value[0..6], Some(&value[6..8])),
+            _ => return Err(HexColorError::InvalidLength),
+        };
+
+        Ok(RgbaColor {
+            r: parse_byte(&rgb[0..2])?,
+            g: parse_byte(&rgb[2..4])?,
+            b: parse_byte(&rgb[4..6])?,
+            a: alpha.map(parse_byte).transpose()?.unwrap_or(255),
+        })
+    }
+}
+
+fn parse_byte(input: &str) -> Result<u8, HexColorError> {
+    u8::from_str_radix(input, 16).map_err(|_| HexColorError::InvalidComponent)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

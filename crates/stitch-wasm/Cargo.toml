@@ -1,0 +1,16 @@
+[package]
+name = "stitch-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "WebAssembly adapter for the 🩹 Stitch Me Up image composition engine"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+stitch-core = { path = "../stitch-core" }
+wasm-bindgen.workspace = true
+js-sys.workspace = true

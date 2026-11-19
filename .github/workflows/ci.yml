@@ -26,5 +26,11 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Check wasm build
+        run: cargo check -p stitch-wasm --target wasm32-unknown-unknown
+
       - name: Run tests
         run: cargo test --workspace

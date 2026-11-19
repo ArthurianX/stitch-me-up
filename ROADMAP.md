@@ -41,7 +41,7 @@ Decision log:
 
 ## 0.3 — Reach
 
-- [ ] `stitch-wasm` adapter exposing `compose` to JavaScript
+- [x] `stitch-wasm` adapter exposing `compose` to JavaScript
 - [ ] `examples/` with runnable samples used by the README
 - [ ] `docs/` with the API reference and a layout cookbook
 - [ ] Published crate metadata (`repository`, `readme`, keywords, categories)
