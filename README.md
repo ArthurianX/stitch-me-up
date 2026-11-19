@@ -24,6 +24,8 @@ stitch-me-up/
 ├── crates/
 │   ├── stitch-core/
 │   └── stitch-cli/
+├── examples/
+├── docs/
 ├── .github/
 └── README.md
 ```
@@ -95,6 +97,20 @@ stitch-me-up combine \
   --output out.png \
   a.png b.png c.png
 ```
+
+## Examples
+
+- WebAssembly browser demo: [examples/web](examples/web/README.md) — compose images in
+  the page itself; requires `wasm-pack` to build its `pkg/` directory first.
+- Command-line demo: [examples/cli](examples/cli/compose.sh) — a decorated grid in a
+  few lines of bash, runnable from any directory in the repository.
+
+## Documentation
+
+- [docs/api.md](docs/api.md) — core API reference: types, functions, errors, behavior
+- [docs/cli.md](docs/cli.md) — every CLI flag, default, and error format
+- [docs/layouts.md](docs/layouts.md) — layout cookbook with diagrams and sizing rules
+- [docs/wasm.md](docs/wasm.md) — the `Composer` JavaScript API and build workflow
 
 ## Development
 
