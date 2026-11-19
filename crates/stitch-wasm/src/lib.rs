@@ -14,7 +14,7 @@ use stitch_core::ComposeOptions;
 #[cfg(target_arch = "wasm32")]
 use stitch_core::Insets;
 #[cfg(any(target_arch = "wasm32", test))]
-use stitch_core::{Alignment, Divider, Frame, LayoutKind, ResizeMode, RgbaColor};
+use stitch_core::{Alignment, Divider, Frame, LayoutKind, ResizeMode, RgbaColor, Spacing};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
@@ -44,8 +44,10 @@ impl Composer {
         Composer::default()
     }
 
-    pub fn set_spacing(&mut self, spacing: u32) {
-        self.options.spacing = spacing;
+    /// Horizontal and vertical gaps in pixels; each layout uses its own axis
+    /// (vertical stack → y, horizontal stack and before-after → x, grid → both).
+    pub fn set_spacing(&mut self, x: u32, y: u32) {
+        self.apply_spacing(x, y);
     }
 
     pub fn set_padding(&mut self, top: u32, right: u32, bottom: u32, left: u32) {
@@ -112,6 +114,12 @@ impl Composer {
 /// builds would warn about unused methods here.
 #[cfg(any(target_arch = "wasm32", test))]
 impl Composer {
+    /// Horizontal and vertical gaps in pixels; each layout uses its own axis
+    /// (vertical stack → y, horizontal stack and before-after → x, grid → both).
+    fn apply_spacing(&mut self, x: u32, y: u32) {
+        self.options.spacing = Spacing { x, y };
+    }
+
     fn apply_layout(&mut self, layout: &str, columns: u32) -> Result<(), String> {
         self.options.layout = parse_layout(layout, columns)?;
         Ok(())
@@ -204,6 +212,7 @@ fn normalize(value: &str) -> String {
 mod tests {
     use stitch_core::{
         Alignment, ComposeOptions, Divider, Frame, Insets, LayoutKind, ResizeMode, RgbaColor,
+        Spacing,
     };
 
     use super::{parse_alignment, parse_layout, parse_resize_mode, Composer};
@@ -338,7 +347,7 @@ mod tests {
     fn updates_radius_padding_spacing_and_layout() {
         let mut composer = Composer::default();
 
-        composer.options.spacing = 12;
+        composer.apply_spacing(12, 3);
         composer.options.padding = Insets {
             top: 1,
             right: 2,
@@ -354,7 +363,7 @@ mod tests {
             .apply_resize_mode("fit-to-same-width")
             .expect("same width resize mode");
 
-        assert_eq!(composer.options.spacing, 12);
+        assert_eq!(composer.options.spacing, Spacing { x: 12, y: 3 });
         assert_eq!(composer.options.pane_style.corner_radius, 8);
         assert_eq!(composer.options.layout, LayoutKind::BeforeAfter);
         assert_eq!(composer.options.alignment, Alignment::End);

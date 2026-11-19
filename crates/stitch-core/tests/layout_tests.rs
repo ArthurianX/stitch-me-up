@@ -3,7 +3,7 @@ mod helpers;
 use helpers::solid_image;
 use stitch_core::{
     plan_layout, Alignment, ComposeError, ComposeOptions, Divider, Insets, LayoutKind, PaneStyle,
-    ResizeMode, RgbaColor,
+    ResizeMode, RgbaColor, Spacing,
 };
 
 #[test]
@@ -41,7 +41,7 @@ fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 3,
+        spacing: Spacing::all(3),
         padding: Insets {
             top: 2,
             right: 4,
@@ -74,7 +74,7 @@ fn plans_horizontal_stack_with_end_alignment() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::End,
@@ -101,7 +101,7 @@ fn fit_to_same_width_resizes_height_in_layout() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -128,7 +128,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
@@ -154,7 +154,7 @@ fn before_after_equalizes_pane_heights() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 4,
+        spacing: Spacing::all(4),
         padding: Insets::all(2),
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
@@ -209,7 +209,7 @@ fn before_after_scales_shorter_pane_to_taller_height() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
@@ -243,7 +243,7 @@ fn before_after_ignores_resize_mode() {
     ];
     let base = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
@@ -290,7 +290,7 @@ fn plans_grid_row_major_with_track_sizes() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 2 },
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -326,7 +326,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 5 },
-        spacing: 3,
+        spacing: Spacing::all(3),
         padding: Insets::all(2),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -338,7 +338,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
     let plan = plan_layout(&images, &options).expect("single-row grid plan");
 
     let tracks = 4 + 2 + 6;
-    let gaps = 2 * options.spacing;
+    let gaps = 2 * options.spacing.x;
     let padding = options.padding.left + options.padding.right;
 
     assert_eq!(plan.width, tracks + gaps + padding);
@@ -363,7 +363,7 @@ fn grid_alignment_applies_within_column() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 2 },
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Center,
@@ -377,7 +377,7 @@ fn grid_alignment_applies_within_column() {
     assert_eq!(plan.placed_images[0].x, options.padding.left);
     assert_eq!(
         plan.placed_images[1].x,
-        options.padding.left + 4 + options.spacing + 1
+        options.padding.left + 4 + options.spacing.x + 1
     );
 
     let plan = plan_layout(
@@ -391,7 +391,7 @@ fn grid_alignment_applies_within_column() {
 
     assert_eq!(
         plan.placed_images[1].x,
-        options.padding.left + 4 + options.spacing + 2
+        options.padding.left + 4 + options.spacing.x + 2
     );
 }
 
@@ -403,7 +403,7 @@ fn single_row_grid_matches_horizontal_flow() {
     ];
     let grid_options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 2 },
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::all(1),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -450,7 +450,7 @@ fn divider_wider_than_gap_is_rejected() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -478,7 +478,7 @@ fn divider_equal_to_gap_is_accepted() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 2,
+        spacing: Spacing::all(2),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -510,7 +510,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
     ];
     let before_after = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -542,4 +542,104 @@ fn zero_width_divider_is_allowed_without_spacing() {
         plan_layout(&images, &vertical).unwrap_err(),
         ComposeError::DividerRequiresBeforeAfter
     ));
+}
+
+#[test]
+fn vertical_uses_only_vertical_spacing() {
+    let images = vec![
+        solid_image(2, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        spacing: Spacing { x: 50, y: 3 },
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("vertical plan");
+
+    assert_eq!(plan.width, 2);
+    assert_eq!(plan.height, 7);
+    assert_eq!(plan.placed_images[1].y, 5);
+}
+
+#[test]
+fn horizontal_uses_only_horizontal_spacing() {
+    let images = vec![
+        solid_image(2, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::HorizontalStack,
+        spacing: Spacing { x: 3, y: 50 },
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("horizontal plan");
+
+    assert_eq!(plan.width, 7);
+    assert_eq!(plan.height, 2);
+    assert_eq!(plan.placed_images[1].x, 5);
+}
+
+#[test]
+fn grid_uses_per_axis_spacing() {
+    let images = (0..4)
+        .map(|index| solid_image(2, 2, [index as u8 * 40, 60, 120, 255]))
+        .collect::<Vec<_>>();
+    let options = ComposeOptions {
+        layout: LayoutKind::Grid { columns: 2 },
+        spacing: Spacing { x: 5, y: 7 },
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("grid plan");
+
+    assert_eq!(plan.width, 9);
+    assert_eq!(plan.height, 11);
+    let positions: Vec<(u32, u32)> = plan
+        .placed_images
+        .iter()
+        .map(|placed| (placed.x, placed.y))
+        .collect();
+    assert_eq!(positions, vec![(0, 0), (7, 0), (0, 9), (7, 9)]);
+}
+
+#[test]
+fn before_after_uses_horizontal_spacing() {
+    let images = vec![
+        solid_image(2, 2, [255, 0, 0, 255]),
+        solid_image(2, 2, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: Spacing { x: 6, y: 40 },
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+    };
+
+    let plan = plan_layout(&images, &options).expect("before-after plan");
+
+    assert_eq!(plan.width, 10);
+    assert_eq!(plan.height, 2);
+    assert_eq!(plan.placed_images[1].x, 8);
 }

@@ -4,7 +4,7 @@ use helpers::{pixel_at, solid_image};
 use stitch_core::render::render;
 use stitch_core::{
     compose, Alignment, CanvasPlan, ComposeOptions, Divider, Frame, Insets, LayoutKind, PaneStyle,
-    PlacedImage, ResizeMode, RgbaColor,
+    PlacedImage, ResizeMode, RgbaColor, Spacing,
 };
 
 #[test]
@@ -15,7 +15,7 @@ fn renders_background_and_stacked_pixels() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 1,
+        spacing: Spacing::all(1),
         padding: Insets::all(1),
         background: RgbaColor {
             r: 10,
@@ -61,7 +61,7 @@ fn renders_grid_cells_and_background() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::Grid { columns: 2 },
-        spacing: 1,
+        spacing: Spacing::all(1),
         padding: Insets::all(1),
         background: RgbaColor {
             r: 10,
@@ -113,7 +113,7 @@ fn renders_before_after_with_equal_pane_heights() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing: 1,
+        spacing: Spacing::all(1),
         padding: Insets::all(0),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
@@ -156,7 +156,7 @@ fn centers_smaller_images_on_vertical_layout() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::all(0),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
@@ -191,7 +191,7 @@ fn applies_fit_to_same_height_during_rendering() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::all(0),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
@@ -222,7 +222,7 @@ fn applies_fit_to_same_width_during_rendering() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::all(0),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
@@ -257,7 +257,7 @@ fn blends_semi_transparent_source_over_background() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor {
             r: 0,
@@ -293,7 +293,7 @@ fn fully_transparent_pixels_leave_background() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor {
             r: 1,
@@ -327,7 +327,7 @@ fn semi_transparent_source_over_transparent_background_keeps_color() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Start,
@@ -372,7 +372,7 @@ fn overlapping_semi_transparent_planes_blend() {
     };
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor::TRANSPARENT,
         alignment: Alignment::Center,
@@ -397,7 +397,7 @@ fn low_alpha_blend_uses_exact_weighting() {
     ];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor {
             r: 255,
@@ -429,7 +429,7 @@ fn red_and_filler(size: u32) -> Vec<stitch_core::InputImage> {
 fn pane_options(pane_style: PaneStyle, background: RgbaColor) -> ComposeOptions {
     ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background,
         alignment: Alignment::Start,
@@ -448,7 +448,7 @@ fn default_pane_style_keeps_existing_output() {
     let plain = ComposeOptions::default();
     let explicit = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 0,
+        spacing: Spacing::all(0),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,
@@ -685,7 +685,7 @@ fn frame_covers_pane_when_frame_exceeds_size() {
 fn before_after_options(spacing: u32, padding: u32, divider: Option<Divider>) -> ComposeOptions {
     ComposeOptions {
         layout: LayoutKind::BeforeAfter,
-        spacing,
+        spacing: Spacing::all(spacing),
         padding: Insets::all(padding),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,

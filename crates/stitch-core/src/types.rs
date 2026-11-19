@@ -127,10 +127,22 @@ pub struct Divider {
     pub color: RgbaColor,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Spacing {
+    pub x: u32,
+    pub y: u32,
+}
+
+impl Spacing {
+    pub const fn all(value: u32) -> Self {
+        Self { x: value, y: value }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComposeOptions {
     pub layout: LayoutKind,
-    pub spacing: u32,
+    pub spacing: Spacing,
     pub padding: Insets,
     pub background: RgbaColor,
     pub alignment: Alignment,
@@ -143,7 +155,7 @@ impl Default for ComposeOptions {
     fn default() -> Self {
         Self {
             layout: LayoutKind::VerticalStack,
-            spacing: 0,
+            spacing: Spacing::default(),
             padding: Insets::default(),
             background: RgbaColor::WHITE,
             alignment: Alignment::Start,

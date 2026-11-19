@@ -15,7 +15,9 @@ stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 | `-o, --output <FILE>` | required | Output PNG file |
 | `--layout <LAYOUT>` | `vertical` | `vertical`, `horizontal`, `grid`, `before-after` |
 | `--columns <COLUMNS>` | `2` | Grid column count when layout is `grid` |
-| `--spacing <SPACING>` | `0` | Space between images in pixels |
+| `--spacing <SPACING>` | `0` | Space between images in pixels, overridden per axis by `--spacing-x`/`--spacing-y` |
+| `--spacing-x <SPACING_X>` | unset | Horizontal gap between images in pixels, overriding `--spacing` |
+| `--spacing-y <SPACING_Y>` | unset | Vertical gap between images in pixels, overriding `--spacing` |
 | `--padding <PADDING>` | `0` | Uniform padding around the canvas |
 | `--padding-top <N>` | unset | Padding above the canvas, overriding `--padding` |
 | `--padding-right <N>` | unset | Padding to the right of the canvas, overriding `--padding` |
@@ -33,8 +35,11 @@ stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 
 Value rules:
 
-- Sizes (`--spacing`, `--padding*`, `--columns`, `--frame-width`, `--corner-radius`,
-  `--divider-width`) are non-negative integers (`u32`).
+- Sizes (`--spacing`, `--spacing-x`, `--spacing-y`, `--padding*`, `--columns`,
+  `--frame-width`, `--corner-radius`, `--divider-width`) are non-negative integers
+  (`u32`). `--spacing` sets both axes; `--spacing-x`/`--spacing-y` override one axis
+  each (vertical stacks use the vertical gap, horizontal stacks and before-after use
+  the horizontal gap, grids use both).
 - Colors accept `#RRGGBB` or `#RRGGBBAA`; the `#` prefix is optional but shells usually
   need quoting to keep it from being treated as a comment. A malformed color fails at
   argument-parsing time with `expected color in #RRGGBB or #RRGGBBAA format` or

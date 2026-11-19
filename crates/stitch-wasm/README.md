@@ -32,7 +32,7 @@ await init();
 
 const composer = new Composer();
 composer.set_layout('before-after', 0);
-composer.set_spacing(12);
+composer.set_spacing(12, 12);
 composer.set_background('#ffffff');
 composer.set_corner_radius(8);
 

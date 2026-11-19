@@ -56,7 +56,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 ## Current Features
 
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
-- Options: spacing, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
+- Options: per-axis spacing (`Spacing { x, y }` — uniform via `--spacing`, overridden per axis by `--spacing-x`/`--spacing-y`), padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
 - Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG
@@ -74,9 +74,10 @@ math and `CanvasPlan` stay untouched.
   antialiasing. The radius is clamped to half the smaller pane dimension; larger values
   are not an error. Pixels outside the mask leave whatever was underneath (usually the
   background) visible.
-- Divider: an optional stroke for `BeforeAfter` only, centered inside the `spacing` gap
-  between the two panes and spanning their shared height. It must fit inside the gap,
-  otherwise planning reports the gap width, and its alpha composites like everything else.
+- Divider: an optional stroke for `BeforeAfter` only, centered inside the horizontal
+  (`Spacing::x`) gap between the two panes and spanning their shared height. It must fit
+  inside the gap, otherwise planning reports the gap width, and its alpha composites like
+  everything else.
 - CLI flags: `--frame-width`, `--frame-color`, `--corner-radius`, `--divider-width`,
   `--divider-color`.
 
@@ -96,6 +97,13 @@ stitch-me-up combine \
   --background "#ffffff" \
   --output out.png \
   a.png b.png c.png
+```
+
+`--spacing` sets both axes; `--spacing-x` and `--spacing-y` override one axis each:
+
+```bash
+stitch-me-up combine --layout grid --columns 2 --spacing 8 --spacing-x 20 --spacing-y 4 \
+  --output grid.png a.png b.png c.png d.png
 ```
 
 ## Examples

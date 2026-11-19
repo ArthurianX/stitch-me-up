@@ -48,9 +48,17 @@ Decision log:
 
 ## 0.4 — Layout expressiveness
 
-- [ ] Per-axis spacing (`spacing_x` / `spacing_y`)
+- [x] Per-axis spacing (`Spacing { x, y }`, with `--spacing-x` / `--spacing-y`)
 - [ ] Grid column weights for uneven columns
 - [ ] Per-image style overrides (new input shape; breaking change)
+
+Decision log:
+
+- **`spacing` became `Spacing { x, y }`.** Breaking at 0.x with no compatibility
+  shim: `ComposeOptions.spacing`, `Composer.set_spacing(x, y)`, and the CLI's
+  `--spacing-x`/`--spacing-y` flags replace the single uniform value.
+  `Spacing::all(n)` reproduces the old behavior; each layout reads only the axis
+  it needs (vertical → `y`, horizontal and before-after → `x`, grid → both).
 
 ## Out of scope
 

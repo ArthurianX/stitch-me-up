@@ -145,7 +145,7 @@ fn plan_vertical(
     options: &ComposeOptions,
 ) -> Result<CanvasPlan, ComposeError> {
     let content_width = sizes.iter().map(|size| size.width).max().unwrap_or(0);
-    let content_height = sum_dimensions(sizes.iter().map(|size| size.height), options.spacing)?;
+    let content_height = sum_dimensions(sizes.iter().map(|size| size.height), options.spacing.y)?;
 
     let canvas_width =
         padded_dimension(content_width, options.padding.left, options.padding.right)?;
@@ -179,7 +179,7 @@ fn plan_vertical(
             .ok_or(ComposeError::DimensionOverflow)?;
         if index + 1 < sizes.len() {
             y = y
-                .checked_add(options.spacing)
+                .checked_add(options.spacing.y)
                 .ok_or(ComposeError::DimensionOverflow)?;
         }
     }
@@ -195,7 +195,7 @@ fn plan_horizontal(
     sizes: &[ResolvedSize],
     options: &ComposeOptions,
 ) -> Result<CanvasPlan, ComposeError> {
-    let content_width = sum_dimensions(sizes.iter().map(|size| size.width), options.spacing)?;
+    let content_width = sum_dimensions(sizes.iter().map(|size| size.width), options.spacing.x)?;
     let content_height = sizes.iter().map(|size| size.height).max().unwrap_or(0);
 
     let canvas_width =
@@ -230,7 +230,7 @@ fn plan_horizontal(
             .ok_or(ComposeError::DimensionOverflow)?;
         if index + 1 < sizes.len() {
             x = x
-                .checked_add(options.spacing)
+                .checked_add(options.spacing.x)
                 .ok_or(ComposeError::DimensionOverflow)?;
         }
     }
@@ -302,16 +302,16 @@ fn plan_grid(
         row_heights[row] = row_heights[row].max(size.height);
     }
 
-    let content_width = sum_dimensions(column_widths.iter().copied(), options.spacing)?;
-    let content_height = sum_dimensions(row_heights.iter().copied(), options.spacing)?;
+    let content_width = sum_dimensions(column_widths.iter().copied(), options.spacing.x)?;
+    let content_height = sum_dimensions(row_heights.iter().copied(), options.spacing.y)?;
 
     let canvas_width =
         padded_dimension(content_width, options.padding.left, options.padding.right)?;
     let canvas_height =
         padded_dimension(content_height, options.padding.top, options.padding.bottom)?;
 
-    let column_offsets = track_offsets(&column_widths, options.padding.left, options.spacing)?;
-    let row_offsets = track_offsets(&row_heights, options.padding.top, options.spacing)?;
+    let column_offsets = track_offsets(&column_widths, options.padding.left, options.spacing.x)?;
+    let row_offsets = track_offsets(&row_heights, options.padding.top, options.spacing.y)?;
 
     let mut placed_images = Vec::with_capacity(sizes.len());
 

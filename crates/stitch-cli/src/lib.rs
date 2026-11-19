@@ -6,7 +6,7 @@ use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
     compose, load_image_from_path, save_png, Alignment, ComposeOptions, Divider, Frame, Insets,
-    LayoutKind, PaneStyle, ResizeMode, RgbaColor,
+    LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
 };
 
 pub use color::parse_rgba_color;
@@ -45,8 +45,24 @@ pub struct CombineArgs {
     #[arg(long, value_enum, default_value_t = LayoutArg::Vertical)]
     pub layout: LayoutArg,
 
-    #[arg(long, default_value_t = 0, help = "Space between images in pixels")]
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Space between images in pixels, overridden per axis by --spacing-x/--spacing-y"
+    )]
     pub spacing: u32,
+
+    #[arg(
+        long,
+        help = "Horizontal gap between images in pixels, overriding --spacing"
+    )]
+    pub spacing_x: Option<u32>,
+
+    #[arg(
+        long,
+        help = "Vertical gap between images in pixels, overriding --spacing"
+    )]
+    pub spacing_y: Option<u32>,
 
     #[arg(
         long,
@@ -182,7 +198,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
 
     let options = ComposeOptions {
         layout: layout_kind(args.layout, args.columns),
-        spacing: args.spacing,
+        spacing: spacing(args.spacing, args.spacing_x, args.spacing_y),
         padding: insets(
             args.padding,
             args.padding_top,
@@ -227,6 +243,13 @@ pub fn resize_mode(mode: ResizeModeArg) -> ResizeMode {
         ResizeModeArg::None => ResizeMode::None,
         ResizeModeArg::FitToSameWidth => ResizeMode::FitToSameWidth,
         ResizeModeArg::FitToSameHeight => ResizeMode::FitToSameHeight,
+    }
+}
+
+pub fn spacing(uniform: u32, x: Option<u32>, y: Option<u32>) -> Spacing {
+    Spacing {
+        x: x.unwrap_or(uniform),
+        y: y.unwrap_or(uniform),
     }
 }
 
@@ -428,12 +451,69 @@ mod tests {
     }
 
     #[test]
+    fn per_axis_spacing_overrides_uniform_spacing() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--spacing",
+            "4",
+            "--spacing-x",
+            "20",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.spacing, 4);
+                assert_eq!(args.spacing_x, Some(20));
+                assert_eq!(args.spacing_y, None);
+
+                assert_eq!(
+                    spacing(args.spacing, args.spacing_x, args.spacing_y),
+                    Spacing { x: 20, y: 4 }
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn per_axis_spacing_defaults_to_uniform_spacing() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--spacing",
+            "7",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.spacing_x, None);
+                assert_eq!(args.spacing_y, None);
+
+                assert_eq!(
+                    spacing(args.spacing, args.spacing_x, args.spacing_y),
+                    Spacing::all(7)
+                );
+            }
+        }
+    }
+
+    #[test]
     fn rejects_before_after_with_more_than_two_inputs() {
         let result = combine(CombineArgs {
             inputs: vec!["a.png".into(), "b.png".into(), "c.png".into()],
             output: "out.png".into(),
             layout: LayoutArg::BeforeAfter,
             spacing: 0,
+            spacing_x: None,
+            spacing_y: None,
             padding: 0,
             padding_top: None,
             padding_right: None,
@@ -464,6 +544,8 @@ mod tests {
             output: "out.png".into(),
             layout: LayoutArg::Grid,
             spacing: 0,
+            spacing_x: None,
+            spacing_y: None,
             padding: 0,
             padding_top: None,
             padding_right: None,

@@ -8,7 +8,7 @@ use helpers::solid_image;
 use stitch_core::{
     compose_to_png, encode_png, load_image_from_bytes, load_image_from_path, save_png, Alignment,
     ComposeError, ComposeOptions, ComposedImage, HexColorError, InputImage, Insets, LayoutKind,
-    PaneStyle, ResizeMode, RgbaColor,
+    PaneStyle, ResizeMode, RgbaColor, Spacing,
 };
 
 fn temp_path(name: &str) -> PathBuf {
@@ -68,7 +68,7 @@ fn png_bytes(image: &InputImage) -> Vec<u8> {
 fn vertical_options() -> ComposeOptions {
     ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        spacing: 1,
+        spacing: Spacing::all(1),
         padding: Insets::default(),
         background: RgbaColor::WHITE,
         alignment: Alignment::Start,

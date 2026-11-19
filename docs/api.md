@@ -150,12 +150,37 @@ pub struct Divider {
 }
 ```
 
+### `Spacing`
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Spacing {
+    pub x: u32,
+    pub y: u32,
+}
+
+impl Spacing {
+    pub const fn all(value: u32) -> Self {
+        Self { x: value, y: value }
+    }
+}
+```
+
+`Spacing::default()` is `x: 0, y: 0`; `Spacing::all(n)` sets both axes to `n`. Each
+layout reads only the axis it needs: `VerticalStack` uses `y` for gaps between panes,
+`HorizontalStack` and `BeforeAfter` use `x`, and `Grid` uses `x` for column gaps and
+`y` for row gaps. The unused axis never affects placement or canvas size.
+
+**Breaking change (0.4):** `ComposeOptions.spacing` was a single `u32` applied to both
+axes; it is now `Spacing`. `Spacing::all(n)` reproduces the old behavior exactly. At 0.x
+this ships without a compatibility shim.
+
 ### `ComposeOptions`
 
 ```rust
 pub struct ComposeOptions {
     pub layout: LayoutKind,
-    pub spacing: u32,
+    pub spacing: Spacing,
     pub padding: Insets,
     pub background: RgbaColor,
     pub alignment: Alignment,
@@ -165,7 +190,8 @@ pub struct ComposeOptions {
 }
 ```
 
-Defaults: `layout: VerticalStack`, `spacing: 0`, `padding: Insets::default()` (all 0),
+Defaults: `layout: VerticalStack`, `spacing: Spacing::default()` (both axes 0),
+`padding: Insets::default()` (all 0),
 `background: RgbaColor::WHITE`, `alignment: Start`, `resize_mode: None`,
 `pane_style: PaneStyle::default()`, `divider: None`. Note that the CLI uses different
 defaults for some options — see the [CLI reference](cli.md).
@@ -216,7 +242,7 @@ filesystem access.
   resolving sizes; `BeforeAfter` then checks the two-image count.
 - **BeforeAfter** scales both panes to the shared tallest height with aspect ratio
   preserved and ignores `resize_mode`; the divider (if any) must fit inside the
-  `spacing` gap and is centered within it.
+  `spacing.x` gap and is centered within it.
 - **Grid** fills row-major and auto-sizes each column to its widest pane and each row
   to its tallest pane; `columns` is clamped to the image count, and a partial last row
   leaves background-colored cells.

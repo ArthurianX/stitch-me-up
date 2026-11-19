@@ -37,7 +37,7 @@ radius 0, no divider).
 | Method | Accepted values |
 | --- | --- |
 | `set_layout(layout, columns)` | `"vertical"`, `"horizontal"`, `"grid"`, `"before-after"` (case-insensitive, surrounding whitespace trimmed). `columns` is only used by `"grid"`; pass `0` and `compose` fails with `grid layouts require at least one column` |
-| `set_spacing(spacing)` | number of pixels |
+| `set_spacing(x, y)` | horizontal and vertical gap in pixels; each layout uses its own axis (see [layouts.md](layouts.md)) |
 | `set_padding(top, right, bottom, left)` | numbers of pixels, in that order |
 | `set_background(hex)` | `#RRGGBB` or `#RRGGBBAA` (`#` optional) |
 | `set_alignment(alignment)` | `"start"`, `"center"`, `"end"` (case-insensitive) |

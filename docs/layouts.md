@@ -1,10 +1,13 @@
 # Layout Cookbook
 
 All layouts: panes sit inside a content band, the band sits inside `padding`
-(`--padding`, optionally overridden per side), gaps between panes are `spacing`.
-`alignment` (`start`, `center`, `end`) shifts each pane within its cross-axis track;
-canvas size never depends on alignment. Sizes are integers; scaling rounds
-(`num * target / den` plus half the denominator).
+(`--padding`, optionally overridden per side), gaps between panes are `--spacing`
+(uniform) with `--spacing-x`/`--spacing-y` overriding one axis. Each layout uses only
+the axis it needs: `vertical` reads the vertical gap (`y`), `horizontal` and
+`before-after` read the horizontal gap (`x`), `grid` reads `x` between columns and `y`
+between rows; the unused axis is ignored. `alignment` (`start`, `center`, `end`) shifts
+each pane within its cross-axis track; canvas size never depends on alignment. Sizes are
+integers; scaling rounds (`num * target / den` plus half the denominator).
 
 ## Choosing a layout
 
@@ -17,15 +20,16 @@ canvas size never depends on alignment. Sizes are integers; scaling rounds
 
 ## `vertical`
 
-Canvas width = widest image; height = sum of heights + `spacing` between each pair.
-Shorter panes slide horizontally according to `alignment`.
+Canvas width = widest image; height = sum of heights + the vertical gap (`--spacing-y`,
+or `--spacing`) between each pair; `--spacing-x` is unused here. Shorter panes slide
+horizontally according to `alignment`.
 
 ```text
 padding ┌──────────────────────────────┐
         │  ┌───────────────┐           │   content width = widest pane
         │  │    image 1    │           │
         │  └───────────────┘           │
-        │     spacing ┆               │
+        │  vertical gap ┆             │
         │    ┌───────────────┐        │   narrower pane, aligned center
         │    │   image 2     │        │
         └──────────────────────────────┘
@@ -38,7 +42,8 @@ stitch-me-up combine --layout vertical --spacing 16 --padding 24 \
 
 ## `horizontal`
 
-Canvas height = tallest image; width = sum of widths + `spacing`. Shorter panes slide
+Canvas height = tallest image; width = sum of widths + the horizontal gap
+(`--spacing-x`, or `--spacing`); `--spacing-y` is unused here. Shorter panes slide
 vertically according to `alignment`.
 
 ```text
@@ -61,8 +66,10 @@ stitch-me-up combine --layout horizontal --spacing 8 --padding 12 \
 
 Images fill cells row-major (image `i` lands in row `i / columns`, column
 `i % columns`). Each column is as wide as its widest member; each row is as tall as
-its tallest member. `--columns` is clamped to the image count; a partial last row
-leaves background-colored cells. Panes align within their column.
+its tallest member. Column gaps use the horizontal spacing (`--spacing-x`), row gaps
+use the vertical spacing (`--spacing-y`); `--spacing` sets both. `--columns` is
+clamped to the image count; a partial last row leaves background-colored cells. Panes
+align within their column.
 
 ```text
 columns = 2, three images
@@ -90,7 +97,9 @@ and row heights are `max(30, 60) = 60` and `max(30) = 30`. The canvas is
 ## `before-after`
 
 Exactly two images. Both are scaled to the shared tallest height, preserving aspect
-ratio — `--resize-mode` is ignored. They are then placed like a horizontal stack.
+ratio — `--resize-mode` is ignored. They are then placed like a horizontal stack, so
+the gap between them is the horizontal spacing (`--spacing-x`, or `--spacing`) and
+`--spacing-y` is unused.
 
 ```text
 ┌───────────────────┬────────────────────────┐
@@ -117,7 +126,7 @@ A 40x30 and a 20x60 image become 40x30 and 20x60 → both scaled to height 60: w
   pixels of the image; a corner radius exposes the background outside the rounded
   mask (hard-edged, clamped to half the smaller pane dimension).
 - `--divider-width` / `--divider-color` are valid for **`before-after` only**: the
-  divider is centered in the `spacing` gap and spans the shared pane height. It must
+  divider is centered in the horizontal gap and spans the shared pane height. It must
   fit inside the gap — `--spacing 2 --divider-width 4` fails with
   `divider width 4 exceeds the 2px gap between panes; increase spacing` — and using a
   non-zero divider with any other layout fails with

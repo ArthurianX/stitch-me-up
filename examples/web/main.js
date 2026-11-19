@@ -80,7 +80,7 @@ function composeAll() {
       const layout = $("layout").value;
 
       composer.set_layout(layout, Math.max(1, Number($("columns").value)));
-      composer.set_spacing(Number($("spacing").value));
+      composer.set_spacing(Number($("spacing-x").value), Number($("spacing-y").value));
       composer.set_padding(Number($("pad-top").value), Number($("pad-right").value),
         Number($("pad-bottom").value), Number($("pad-left").value));
       composer.set_background($("background").value);
