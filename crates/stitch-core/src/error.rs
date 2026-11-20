@@ -20,6 +20,12 @@ pub enum ComposeError {
     DividerRequiresBeforeAfter,
     #[error("divider width {width} exceeds the {gap}px gap between panes; increase spacing")]
     DividerTooWide { width: u32, gap: u32 },
+    #[error("column weights are only supported by the grid layout")]
+    ColumnWeightsRequireGrid,
+    #[error("grid received {actual} column weights for {expected} columns")]
+    ColumnWeightCountMismatch { expected: usize, actual: usize },
+    #[error("column weight {index} must be at least 1")]
+    ZeroColumnWeight { index: usize },
     #[error("image dimension overflow while calculating layout")]
     DimensionOverflow,
     #[error("output coordinates overflowed during rendering")]

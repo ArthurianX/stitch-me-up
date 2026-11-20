@@ -93,6 +93,12 @@ impl Composer {
         self.apply_divider(width, hex).map_err(js_error)
     }
 
+    /// Relative column widths for the grid layout, as a `Uint32Array`.
+    /// The count must match the column count; pass an empty array for auto sizing.
+    pub fn set_column_weights(&mut self, weights: &[u32]) {
+        self.apply_column_weights(weights);
+    }
+
     /// Each element must be a `Uint8Array` containing PNG or JPEG bytes.
     /// Returns a `Uint8Array` of PNG bytes.
     pub fn compose(&self, images: Array) -> Result<Vec<u8>, JsError> {
@@ -152,6 +158,11 @@ impl Composer {
         let color = parse_color_hex(hex)?;
         self.options.divider = (width > 0).then_some(Divider { width, color });
         Ok(())
+    }
+
+    /// Relative column widths for the grid layout; empty keeps auto sizing.
+    fn apply_column_weights(&mut self, weights: &[u32]) {
+        self.options.column_weights = weights.to_vec();
     }
 }
 
@@ -341,6 +352,17 @@ mod tests {
         );
 
         assert!(composer.apply_divider(3, "nope").is_err());
+    }
+
+    #[test]
+    fn stores_column_weights() {
+        let mut composer = Composer::default();
+
+        composer.apply_column_weights(&[1, 2]);
+        assert_eq!(composer.options.column_weights, vec![1, 2]);
+
+        composer.apply_column_weights(&[]);
+        assert!(composer.options.column_weights.is_empty());
     }
 
     #[test]

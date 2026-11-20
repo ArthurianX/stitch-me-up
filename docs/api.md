@@ -187,14 +187,37 @@ pub struct ComposeOptions {
     pub resize_mode: ResizeMode,
     pub pane_style: PaneStyle,
     pub divider: Option<Divider>,
+    pub column_weights: Vec<u32>,
 }
 ```
 
 Defaults: `layout: VerticalStack`, `spacing: Spacing::default()` (both axes 0),
 `padding: Insets::default()` (all 0),
 `background: RgbaColor::WHITE`, `alignment: Start`, `resize_mode: None`,
-`pane_style: PaneStyle::default()`, `divider: None`. Note that the CLI uses different
-defaults for some options — see the [CLI reference](cli.md).
+`pane_style: PaneStyle::default()`, `divider: None`, `column_weights: Vec::new()`.
+Note that the CLI uses different defaults for some options — see the
+[CLI reference](cli.md).
+
+### Grid column weights
+
+`column_weights` sizes grid tracks. It is empty by default, which keeps auto sizing:
+each column is as wide as its widest image. When non-empty it must contain one weight
+per requested column, every weight at least `1`, and the layout must be `Grid`.
+
+With `natural[i]` = widest image in column `i`:
+
+```text
+unit   = max_i ceil(natural[i] / weights[i])
+track[i] = unit * weights[i]
+```
+
+Tracks never shrink below their content and images are never stretched; extra width is
+background and images are aligned inside the wider track as usual. Because weights are
+relative, `[1, 1]` makes all used columns equally wide (the widest natural width), and
+`[1, 2]` makes the second twice the first.
+
+Example: images 40x30, 20x60, 30x30 with `columns: 2` and `column_weights: vec![1, 2]`
+→ natural `[40, 20]`, `unit = max(40, 10) = 40`, tracks `[40, 80]`, canvas 120x90.
 
 ## Functions
 
@@ -231,6 +254,9 @@ filesystem access.
 | `BeforeAfterRequiresTwo` | `before-after layout requires exactly two images` |
 | `DividerRequiresBeforeAfter` | `a divider is only supported by the before-after layout` |
 | `DividerTooWide { width, gap }` | `divider width {width} exceeds the {gap}px gap between panes; increase spacing` |
+| `ColumnWeightsRequireGrid` | `column weights are only supported by the grid layout` |
+| `ColumnWeightCountMismatch { expected, actual }` | `grid received {actual} column weights for {expected} columns` |
+| `ZeroColumnWeight { index }` | `column weight {index} must be at least 1` |
 | `DimensionOverflow` | `image dimension overflow while calculating layout` |
 | `CoordinateOverflow` | `output coordinates overflowed during rendering` |
 | `ImageIo(image::ImageError)` | `image I/O error: {0}` |

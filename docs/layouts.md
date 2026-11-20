@@ -94,6 +94,33 @@ Track sizing example: images 40x30, 20x60, 30x30 with `--columns 2 --spacing 8
 and row heights are `max(30, 60) = 60` and `max(30) = 30`. The canvas is
 `40 + 8 + 20 + 32 = 100` wide and `60 + 8 + 30 + 32 = 130` tall.
 
+### Weights
+
+`--column-weights` replaces the natural column widths with relative tracks. Tracks are
+never narrower than their content and images are never stretched: with `natural[i]`
+being the widest image in column `i`,
+
+```text
+unit     = max_i ceil(natural[i] / weight[i])
+track[i] = unit * weight[i]
+```
+
+So `--columns 2 --column-weights 1,2` on the images above gives natural `[40, 20]`,
+`unit = max(40, 10) = 40`, tracks `[40, 80]`, and a 120-wide content band. The 20px
+image stays 20px wide, centered in its 80px track; the slack is background. Equal
+weights (`1,1`) make every used column as wide as the widest natural column. The count
+must match `--columns` exactly and every weight must be at least `1`.
+
+```text
+columns = 2, weights = 1,2
+┌──────────────────┬────────────────────────────────────┐
+│                  │                                    │
+│     image 1      │            image 2                 │   track 0 = 40
+│     (40 wide)    │       (20 wide, centered)          │   track 1 = 80
+│                  │                                    │
+└──────────────────┴────────────────────────────────────┘
+```
+
 ## `before-after`
 
 Exactly two images. Both are scaled to the shared tallest height, preserving aspect

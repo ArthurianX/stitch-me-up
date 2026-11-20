@@ -33,6 +33,7 @@ function setLayout() {
   $("divider-width").disabled = !dividerEnabled;
   $("divider-color").disabled = !dividerEnabled;
   $("columns").disabled = layout !== "grid";
+  $("column-weights").disabled = layout !== "grid";
 }
 
 $("layout").addEventListener("change", setLayout);
@@ -80,6 +81,16 @@ function composeAll() {
       const layout = $("layout").value;
 
       composer.set_layout(layout, Math.max(1, Number($("columns").value)));
+      if (layout === "grid") {
+        const weights = $("column-weights").value
+          .split(",")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+          .map(Number);
+        if (weights.length > 0) {
+          composer.set_column_weights(new Uint32Array(weights));
+        }
+      }
       composer.set_spacing(Number($("spacing-x").value), Number($("spacing-y").value));
       composer.set_padding(Number($("pad-top").value), Number($("pad-right").value),
         Number($("pad-bottom").value), Number($("pad-left").value));

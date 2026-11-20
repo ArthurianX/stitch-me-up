@@ -56,7 +56,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 ## Current Features
 
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
-- Options: per-axis spacing (`Spacing { x, y }` — uniform via `--spacing`, overridden per axis by `--spacing-x`/`--spacing-y`), padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
+- Options: per-axis spacing (`Spacing { x, y }` — uniform via `--spacing`, overridden per axis by `--spacing-x`/`--spacing-y`), grid column weights, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
 - Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG

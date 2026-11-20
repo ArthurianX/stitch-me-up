@@ -53,6 +53,7 @@ fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("vertical plan");
@@ -81,6 +82,7 @@ fn plans_horizontal_stack_with_end_alignment() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("horizontal plan");
@@ -108,6 +110,7 @@ fn fit_to_same_width_resizes_height_in_layout() {
         resize_mode: ResizeMode::FitToSameWidth,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("same-width plan");
@@ -135,6 +138,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
         resize_mode: ResizeMode::FitToSameHeight,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("same-height plan");
@@ -161,6 +165,7 @@ fn before_after_equalizes_pane_heights() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -216,6 +221,7 @@ fn before_after_scales_shorter_pane_to_taller_height() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -250,6 +256,7 @@ fn before_after_ignores_resize_mode() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
     let resized = ComposeOptions {
         resize_mode: ResizeMode::FitToSameWidth,
@@ -297,6 +304,7 @@ fn plans_grid_row_major_with_track_sizes() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("grid plan");
@@ -333,6 +341,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("single-row grid plan");
@@ -370,6 +379,7 @@ fn grid_alignment_applies_within_column() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("centered grid plan");
@@ -410,10 +420,11 @@ fn single_row_grid_matches_horizontal_flow() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
     let horizontal_options = ComposeOptions {
         layout: LayoutKind::HorizontalStack,
-        ..grid_options
+        ..grid_options.clone()
     };
 
     let grid_plan = plan_layout(&images, &grid_options).expect("grid plan");
@@ -460,6 +471,7 @@ fn divider_wider_than_gap_is_rejected() {
             width: 4,
             color: RgbaColor::WHITE,
         }),
+        column_weights: Vec::new(),
     };
 
     let error = plan_layout(&images, &options).unwrap_err();
@@ -488,6 +500,7 @@ fn divider_equal_to_gap_is_accepted() {
             width: 2,
             color: RgbaColor::WHITE,
         }),
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("divider fitting the gap");
@@ -520,6 +533,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
             width: 0,
             color: RgbaColor::WHITE,
         }),
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &before_after).expect("zero-width divider");
@@ -529,7 +543,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
 
     let no_divider = ComposeOptions {
         divider: None,
-        ..before_after
+        ..before_after.clone()
     };
     assert_eq!(plan_layout(&images, &no_divider).expect("no divider"), plan);
 
@@ -559,6 +573,7 @@ fn vertical_uses_only_vertical_spacing() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("vertical plan");
@@ -583,6 +598,7 @@ fn horizontal_uses_only_horizontal_spacing() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("horizontal plan");
@@ -606,6 +622,7 @@ fn grid_uses_per_axis_spacing() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("grid plan");
@@ -635,6 +652,7 @@ fn before_after_uses_horizontal_spacing() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let plan = plan_layout(&images, &options).expect("before-after plan");
@@ -642,4 +660,124 @@ fn before_after_uses_horizontal_spacing() {
     assert_eq!(plan.width, 10);
     assert_eq!(plan.height, 2);
     assert_eq!(plan.placed_images[1].x, 8);
+}
+
+fn grid_weight_options(columns: u32, weights: Vec<u32>) -> ComposeOptions {
+    ComposeOptions {
+        layout: LayoutKind::Grid { columns },
+        spacing: Spacing::default(),
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Center,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+        column_weights: weights,
+    }
+}
+
+fn weighted_images() -> Vec<stitch_core::InputImage> {
+    vec![
+        solid_image(40, 30, [255, 0, 0, 255]),
+        solid_image(20, 60, [0, 255, 0, 255]),
+        solid_image(30, 30, [0, 0, 255, 255]),
+    ]
+}
+
+#[test]
+fn grid_weights_expand_columns_proportionally() {
+    let plan = plan_layout(&weighted_images(), &grid_weight_options(2, vec![1, 2]))
+        .expect("weighted grid plan");
+
+    // natural [40, 20]; unit = max(40/1, ceil(20/2)) = 40; tracks [40, 80].
+    assert_eq!(plan.width, 120);
+    assert_eq!(plan.height, 90);
+    assert_eq!(plan.placed_images[0].x, 0);
+    assert_eq!(plan.placed_images[0].y, 0);
+    assert_eq!(plan.placed_images[0].width, 40);
+    assert_eq!(plan.placed_images[1].x, 70);
+    assert_eq!(plan.placed_images[1].y, 0);
+    assert_eq!(plan.placed_images[1].width, 20);
+    assert_eq!(plan.placed_images[2].x, 5);
+    assert_eq!(plan.placed_images[2].y, 60);
+    assert_eq!(plan.placed_images[2].width, 30);
+}
+
+#[test]
+fn grid_equal_weights_make_uniform_tracks() {
+    let plan = plan_layout(&weighted_images(), &grid_weight_options(2, vec![1, 1]))
+        .expect("uniform weighted grid plan");
+
+    assert_eq!(plan.width, 80);
+    assert_eq!(plan.height, 90);
+    assert_eq!(plan.placed_images[1].x, 50);
+}
+
+#[test]
+fn grid_weights_never_shrink_below_content() {
+    let images = vec![
+        solid_image(40, 10, [255, 0, 0, 255]),
+        solid_image(10, 10, [0, 255, 0, 255]),
+    ];
+    let options = ComposeOptions {
+        alignment: Alignment::Start,
+        ..grid_weight_options(2, vec![2, 1])
+    };
+
+    let plan = plan_layout(&images, &options).expect("weighted grid plan");
+
+    // natural [40, 10]; unit = max(20, 10) = 20; tracks [40, 20] — never below content.
+    assert_eq!(plan.width, 60);
+    assert_eq!(plan.height, 10);
+    assert_eq!(plan.placed_images[1].x, 40);
+    assert_eq!(plan.placed_images[1].width, 10);
+}
+
+#[test]
+fn grid_weights_must_match_columns() {
+    let error = plan_layout(&weighted_images(), &grid_weight_options(2, vec![1])).unwrap_err();
+
+    assert!(matches!(
+        error,
+        ComposeError::ColumnWeightCountMismatch {
+            expected: 2,
+            actual: 1
+        }
+    ));
+}
+
+#[test]
+fn grid_weights_reject_zero() {
+    let error = plan_layout(&weighted_images(), &grid_weight_options(2, vec![0, 1])).unwrap_err();
+
+    assert!(matches!(error, ComposeError::ZeroColumnWeight { index: 0 }));
+}
+
+#[test]
+fn column_weights_require_grid_layout() {
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        ..grid_weight_options(2, vec![1, 1])
+    };
+
+    let error = plan_layout(&weighted_images(), &options).unwrap_err();
+
+    assert!(matches!(error, ComposeError::ColumnWeightsRequireGrid));
+}
+
+#[test]
+fn empty_column_weights_keep_auto_sizing() {
+    let plan = plan_layout(&weighted_images(), &grid_weight_options(2, Vec::new()))
+        .expect("auto-sized grid plan");
+
+    // Same fixture as the weighted tests: columns stay at their natural [40, 20]
+    // widths, rows at [60, 30] — matching the pre-weight grid fixtures above.
+    assert_eq!(plan.width, 60);
+    assert_eq!(plan.height, 90);
+    assert_eq!(plan.placed_images[0].x, 0);
+    assert_eq!(plan.placed_images[0].y, 0);
+    assert_eq!(plan.placed_images[1].x, 40);
+    assert_eq!(plan.placed_images[1].y, 0);
+    assert_eq!(plan.placed_images[2].x, 5);
+    assert_eq!(plan.placed_images[2].y, 60);
 }

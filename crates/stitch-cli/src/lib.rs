@@ -109,6 +109,13 @@ pub struct CombineArgs {
 
     #[arg(
         long,
+        value_delimiter = ',',
+        help = "Comma-separated relative column widths for the grid layout (empty keeps auto sizing)"
+    )]
+    pub column_weights: Vec<u32>,
+
+    #[arg(
+        long,
         default_value_t = 0,
         help = "Frame width in pixels drawn inside each image"
     )]
@@ -211,6 +218,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
         resize_mode: resize_mode(args.resize_mode),
         pane_style: pane_style(args.frame_width, args.frame_color, args.corner_radius),
         divider: divider(args.divider_width, args.divider_color),
+        column_weights: args.column_weights,
     };
 
     let composed = compose(&images, &options).context("failed to compose images")?;
@@ -506,6 +514,34 @@ mod tests {
     }
 
     #[test]
+    fn parses_comma_separated_column_weights() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--layout",
+            "grid",
+            "--columns",
+            "3",
+            "--column-weights",
+            "1,2,3",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => assert_eq!(args.column_weights, vec![1, 2, 3]),
+        }
+
+        let cli = Cli::parse_from(sample_args());
+
+        match cli.command {
+            Commands::Combine(args) => assert!(args.column_weights.is_empty()),
+        }
+    }
+
+    #[test]
     fn rejects_before_after_with_more_than_two_inputs() {
         let result = combine(CombineArgs {
             inputs: vec!["a.png".into(), "b.png".into(), "c.png".into()],
@@ -523,6 +559,7 @@ mod tests {
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,
             columns: 2,
+            column_weights: Vec::new(),
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,
@@ -555,6 +592,7 @@ mod tests {
             alignment: AlignmentArg::Center,
             resize_mode: ResizeModeArg::None,
             columns: 0,
+            column_weights: Vec::new(),
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,

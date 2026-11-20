@@ -149,6 +149,7 @@ pub struct ComposeOptions {
     pub resize_mode: ResizeMode,
     pub pane_style: PaneStyle,
     pub divider: Option<Divider>,
+    pub column_weights: Vec<u32>,
 }
 
 impl Default for ComposeOptions {
@@ -162,6 +163,7 @@ impl Default for ComposeOptions {
             resize_mode: ResizeMode::None,
             pane_style: PaneStyle::default(),
             divider: None,
+            column_weights: Vec::new(),
         }
     }
 }

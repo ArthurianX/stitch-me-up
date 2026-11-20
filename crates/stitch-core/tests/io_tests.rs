@@ -75,6 +75,7 @@ fn vertical_options() -> ComposeOptions {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     }
 }
 

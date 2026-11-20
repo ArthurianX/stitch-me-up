@@ -27,6 +27,7 @@ fn renders_background_and_stacked_pixels() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose image");
@@ -73,6 +74,7 @@ fn renders_grid_cells_and_background() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose grid");
@@ -120,6 +122,7 @@ fn renders_before_after_with_equal_pane_heights() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose before-after");
@@ -163,6 +166,7 @@ fn centers_smaller_images_on_vertical_layout() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose centered");
@@ -198,6 +202,7 @@ fn applies_fit_to_same_height_during_rendering() {
         resize_mode: ResizeMode::FitToSameHeight,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose same-height");
@@ -229,6 +234,7 @@ fn applies_fit_to_same_width_during_rendering() {
         resize_mode: ResizeMode::FitToSameWidth,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose same-width");
@@ -269,6 +275,7 @@ fn blends_semi_transparent_source_over_background() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose blended");
@@ -305,6 +312,7 @@ fn fully_transparent_pixels_leave_background() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose transparent");
@@ -334,6 +342,7 @@ fn semi_transparent_source_over_transparent_background_keeps_color() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose over transparent background");
@@ -379,6 +388,7 @@ fn overlapping_semi_transparent_planes_blend() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = render(&images, &plan, &options).expect("render overlapping planes");
@@ -409,6 +419,7 @@ fn low_alpha_blend_uses_exact_weighting() {
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &options).expect("compose low-alpha");
@@ -436,6 +447,7 @@ fn pane_options(pane_style: PaneStyle, background: RgbaColor) -> ComposeOptions 
         resize_mode: ResizeMode::None,
         pane_style,
         divider: None,
+        column_weights: Vec::new(),
     }
 }
 
@@ -458,6 +470,7 @@ fn default_pane_style_keeps_existing_output() {
             corner_radius: 0,
         },
         divider: None,
+        column_weights: Vec::new(),
     };
 
     let composed = compose(&images, &plain).expect("compose undecorated");
@@ -692,6 +705,7 @@ fn before_after_options(spacing: u32, padding: u32, divider: Option<Divider>) ->
         resize_mode: ResizeMode::None,
         pane_style: PaneStyle::default(),
         divider,
+        column_weights: Vec::new(),
     }
 }
 

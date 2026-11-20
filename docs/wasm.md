@@ -44,6 +44,7 @@ radius 0, no divider).
 | `set_resize_mode(mode)` | `"none"`, `"fit-to-same-width"`, `"fit-to-same-height"` (case-insensitive) |
 | `set_frame(width, hex)` | width `0` disables the frame but still validates the color |
 | `set_corner_radius(radius)` | pixels; clamped to half the smaller pane dimension |
+| `set_column_weights(weights)` | `Uint32Array` of relative grid column widths; count must match the layout's column count, empty array keeps auto sizing |
 | `set_divider(width, hex)` | width `0` disables the divider but still validates the color. Setting a non-zero divider and then composing a non-`before-after` layout throws |
 
 ### `compose(images)`

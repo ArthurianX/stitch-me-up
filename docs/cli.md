@@ -15,6 +15,7 @@ stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 | `-o, --output <FILE>` | required | Output PNG file |
 | `--layout <LAYOUT>` | `vertical` | `vertical`, `horizontal`, `grid`, `before-after` |
 | `--columns <COLUMNS>` | `2` | Grid column count when layout is `grid` |
+| `--column-weights <W1,W2,...>` | unset | Comma-separated relative grid column widths; the count must match `--columns`, and an empty value keeps auto sizing |
 | `--spacing <SPACING>` | `0` | Space between images in pixels, overridden per axis by `--spacing-x`/`--spacing-y` |
 | `--spacing-x <SPACING_X>` | unset | Horizontal gap between images in pixels, overriding `--spacing` |
 | `--spacing-y <SPACING_Y>` | unset | Vertical gap between images in pixels, overriding `--spacing` |
@@ -46,6 +47,8 @@ Value rules:
   `invalid hex color component`.
 - Enum values are the lowercase kebab-case strings listed above, matched
   case-sensitively by clap.
+- `--column-weights` is only valid with `--layout grid`. It must list exactly
+  `--columns` weights, each at least `1`; otherwise the run fails before rendering.
 - `--alignment` defaults to `center` in the CLI although the core default is `start`.
 
 ## Examples
@@ -71,6 +74,13 @@ Decorated grid with asymmetric padding:
 stitch-me-up combine --layout grid --columns 3 --spacing 8 \
   --padding 16 --padding-left 32 --background "#f8fafc" \
   --output grid.png a.png b.png c.png d.png
+```
+
+Weighted grid columns (the second column is twice the first):
+
+```bash
+stitch-me-up combine --layout grid --columns 2 --column-weights 1,2 \
+  --output weighted.png a.png b.png c.png
 ```
 
 The runnable [`examples/cli/compose.sh`](../examples/cli/compose.sh) wraps a similar

@@ -49,7 +49,7 @@ Decision log:
 ## 0.4 — Layout expressiveness
 
 - [x] Per-axis spacing (`Spacing { x, y }`, with `--spacing-x` / `--spacing-y`)
-- [ ] Grid column weights for uneven columns
+- [x] Grid column weights for uneven columns
 - [ ] Per-image style overrides (new input shape; breaking change)
 
 Decision log:
@@ -59,6 +59,9 @@ Decision log:
   `--spacing-x`/`--spacing-y` flags replace the single uniform value.
   `Spacing::all(n)` reproduces the old behavior; each layout reads only the axis
   it needs (vertical → `y`, horizontal and before-after → `x`, grid → both).
+- **Column weights size tracks, they do not stretch images.** `unit` is the largest
+  content-per-weight ratio, so every track stays at or above its natural width and
+  slack becomes background. Empty weights keep auto sizing unchanged.
 
 ## Out of scope
 

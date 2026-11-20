@@ -19,6 +19,10 @@ pub fn plan_layout(
         return Err(ComposeError::DividerRequiresBeforeAfter);
     }
 
+    if !options.column_weights.is_empty() && !matches!(options.layout, LayoutKind::Grid { .. }) {
+        return Err(ComposeError::ColumnWeightsRequireGrid);
+    }
+
     match options.layout {
         LayoutKind::VerticalStack => {
             plan_vertical(&resolve_sizes(images, options.resize_mode)?, options)
@@ -288,6 +292,22 @@ fn plan_grid(
     }
 
     let requested = usize::try_from(columns).map_err(|_| ComposeError::InvalidGridColumns)?;
+
+    if !options.column_weights.is_empty() {
+        if options.column_weights.len() != requested {
+            return Err(ComposeError::ColumnWeightCountMismatch {
+                expected: requested,
+                actual: options.column_weights.len(),
+            });
+        }
+
+        for (index, weight) in options.column_weights.iter().enumerate() {
+            if *weight == 0 {
+                return Err(ComposeError::ZeroColumnWeight { index });
+            }
+        }
+    }
+
     let columns = requested.min(sizes.len()).max(1);
     let rows = sizes.len().div_ceil(columns);
 
@@ -300,6 +320,41 @@ fn plan_grid(
 
         column_widths[column] = column_widths[column].max(size.width);
         row_heights[row] = row_heights[row].max(size.height);
+    }
+
+    if !options.column_weights.is_empty() {
+        // `unit` is the smallest track unit that keeps every weighted track at or
+        // above its natural column width; weights beyond the clamped column count
+        // are unused, so zip stops with the natural widths.
+        let mut unit = 0u64;
+        for (natural, weight) in column_widths.iter().zip(options.column_weights.iter()) {
+            let natural = u64::from(*natural);
+            let weight = u64::from(*weight);
+
+            let quotient = if natural == 0 {
+                0
+            } else {
+                natural
+                    .checked_add(weight)
+                    .and_then(|sum| sum.checked_sub(1))
+                    .ok_or(ComposeError::DimensionOverflow)?
+                    / weight
+            };
+
+            unit = unit.max(quotient);
+        }
+
+        let unit = u32::try_from(unit).map_err(|_| ComposeError::DimensionOverflow)?;
+
+        column_widths = options
+            .column_weights
+            .iter()
+            .take(columns)
+            .map(|weight| {
+                unit.checked_mul(*weight)
+                    .ok_or(ComposeError::DimensionOverflow)
+            })
+            .collect::<Result<Vec<u32>, ComposeError>>()?;
     }
 
     let content_width = sum_dimensions(column_widths.iter().copied(), options.spacing.x)?;
