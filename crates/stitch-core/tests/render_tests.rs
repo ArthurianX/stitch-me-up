@@ -962,3 +962,31 @@ fn per_image_style_adds_decoration_to_one_pane() {
         [255, 255, 255, 255]
     );
 }
+
+#[test]
+fn none_styles_match_explicit_global_styles_byte_for_byte() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(2, 6, [0, 255, 0, 255]),
+    ];
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 1,
+                color: RgbaColor::WHITE,
+            }),
+            corner_radius: 2,
+        },
+        RgbaColor::WHITE,
+    );
+
+    let mut explicit = images.clone();
+    for image in &mut explicit {
+        image.style = Some(options.pane_style);
+    }
+
+    let inherited = compose(&images, &options).expect("compose inherited styles");
+    let overridden = compose(&explicit, &options).expect("compose explicit global styles");
+
+    assert_eq!(inherited, overridden);
+}
