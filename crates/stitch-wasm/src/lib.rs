@@ -7,14 +7,18 @@
 
 #[cfg(target_arch = "wasm32")]
 use js_sys::Array;
-#[cfg(target_arch = "wasm32")]
-use stitch_core::compose_to_png;
-use stitch_core::ComposeOptions;
+use stitch_core::{ComposeOptions, PaneStyle};
 // `Insets` is only named by the wasm-only `set_padding`; the tests import it themselves.
 #[cfg(target_arch = "wasm32")]
+use stitch_core::compose;
+#[cfg(target_arch = "wasm32")]
 use stitch_core::Insets;
+#[cfg(target_arch = "wasm32")]
+use stitch_core::{encode_png, load_image_from_bytes};
 #[cfg(any(target_arch = "wasm32", test))]
-use stitch_core::{Alignment, Divider, Frame, LayoutKind, ResizeMode, RgbaColor, Spacing};
+use stitch_core::{
+    Alignment, Divider, Frame, InputImage, LayoutKind, ResizeMode, RgbaColor, Spacing,
+};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
@@ -34,6 +38,9 @@ pub struct Composer {
     // Read only by wasm's `compose` and by the native tests.
     #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
     options: ComposeOptions,
+    // Same for the per-pane overrides.
+    #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+    pane_styles: Vec<Option<PaneStyle>>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -99,6 +106,24 @@ impl Composer {
         self.apply_column_weights(weights);
     }
 
+    /// 0-based input index; stores a complete style override for that pane.
+    /// `frame_width == 0` disables the frame while still validating the color.
+    pub fn set_pane_style(
+        &mut self,
+        index: usize,
+        frame_width: u32,
+        frame_color: &str,
+        corner_radius: u32,
+    ) -> Result<(), JsError> {
+        self.apply_pane_style(index, frame_width, frame_color, corner_radius)
+            .map_err(js_error)
+    }
+
+    /// Removes the override at `index`; the pane inherits the global style again.
+    pub fn clear_pane_style(&mut self, index: usize) {
+        self.apply_clear_pane_style(index);
+    }
+
     /// Each element must be a `Uint8Array` containing PNG or JPEG bytes.
     /// Returns a `Uint8Array` of PNG bytes.
     pub fn compose(&self, images: Array) -> Result<Vec<u8>, JsError> {
@@ -112,7 +137,15 @@ impl Composer {
             })
             .collect::<Result<Vec<Vec<u8>>, JsError>>()?;
 
-        compose_to_png(&buffers, &self.options).map_err(js_error)
+        let mut decoded = buffers
+            .iter()
+            .map(|bytes| load_image_from_bytes(bytes))
+            .collect::<Result<Vec<InputImage>, _>>()
+            .map_err(js_error)?;
+
+        self.apply_pane_styles(&mut decoded).map_err(js_error)?;
+        let composed = compose(&decoded, &self.options).map_err(js_error)?;
+        encode_png(&composed).map_err(js_error)
     }
 }
 
@@ -163,6 +196,50 @@ impl Composer {
     /// Relative column widths for the grid layout; empty keeps auto sizing.
     fn apply_column_weights(&mut self, weights: &[u32]) {
         self.options.column_weights = weights.to_vec();
+    }
+
+    /// 0-based input index; complete override, replacing the global style for the pane.
+    /// `frame_width == 0` disables the frame but still validates the color.
+    fn apply_pane_style(
+        &mut self,
+        index: usize,
+        frame_width: u32,
+        frame_color: &str,
+        corner_radius: u32,
+    ) -> Result<(), String> {
+        let color = parse_color_hex(frame_color)?;
+        if self.pane_styles.len() <= index {
+            self.pane_styles.resize(index + 1, None);
+        }
+        self.pane_styles[index] = Some(PaneStyle {
+            frame: (frame_width > 0).then_some(Frame {
+                width: frame_width,
+                color,
+            }),
+            corner_radius,
+        });
+        Ok(())
+    }
+
+    /// Removes the override at `index`; the pane inherits the global style again.
+    fn apply_clear_pane_style(&mut self, index: usize) {
+        if let Some(slot) = self.pane_styles.get_mut(index) {
+            *slot = None;
+        }
+    }
+
+    /// Applies stored overrides to the decoded images by index; a stored index with no
+    /// matching image is an error.
+    fn apply_pane_styles(&self, images: &mut [InputImage]) -> Result<(), String> {
+        for (index, style) in self.pane_styles.iter().enumerate() {
+            if let Some(style) = style {
+                let image = images
+                    .get_mut(index)
+                    .ok_or_else(|| format!("pane style index {index} has no matching image"))?;
+                image.style = Some(*style);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -222,15 +299,17 @@ fn normalize(value: &str) -> String {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use stitch_core::{
-        Alignment, ComposeOptions, Divider, Frame, Insets, LayoutKind, ResizeMode, RgbaColor,
-        Spacing,
+        Alignment, ComposeOptions, Divider, Frame, InputImage, Insets, LayoutKind, PaneStyle,
+        ResizeMode, RgbaColor, Spacing,
     };
 
     use super::{parse_alignment, parse_layout, parse_resize_mode, Composer};
 
     #[test]
     fn composer_defaults_match_core_defaults() {
-        assert_eq!(Composer::default().options, ComposeOptions::default());
+        let composer = Composer::default();
+        assert_eq!(composer.options, ComposeOptions::default());
+        assert!(composer.pane_styles.is_empty());
     }
 
     #[test]
@@ -399,5 +478,84 @@ mod tests {
                 left: 4,
             }
         );
+    }
+
+    #[test]
+    fn stores_and_clears_pane_styles() {
+        let mut composer = Composer::default();
+        composer
+            .apply_pane_style(1, 4, "#ff0000", 8)
+            .expect("set style");
+
+        assert_eq!(composer.pane_styles.len(), 2);
+        assert_eq!(composer.pane_styles[0], None);
+        assert_eq!(
+            composer.pane_styles[1],
+            Some(PaneStyle {
+                frame: Some(Frame {
+                    width: 4,
+                    color: RgbaColor {
+                        r: 255,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                }),
+                corner_radius: 8,
+            })
+        );
+
+        composer.apply_clear_pane_style(1);
+        assert_eq!(composer.pane_styles[1], None);
+    }
+
+    #[test]
+    fn applies_pane_styles_by_index() {
+        let mut composer = Composer::default();
+        composer
+            .apply_pane_style(1, 0, "#00ff00", 5)
+            .expect("set style");
+
+        let mut images = vec![
+            InputImage::new(1, 1, vec![255, 0, 0, 255]),
+            InputImage::new(1, 1, vec![0, 255, 0, 255]),
+        ];
+        composer
+            .apply_pane_styles(&mut images)
+            .expect("apply styles");
+
+        assert_eq!(images[0].style, None);
+        assert_eq!(
+            images[1].style,
+            Some(PaneStyle {
+                frame: None,
+                corner_radius: 5,
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_pane_style_for_missing_image() {
+        let mut composer = Composer::default();
+        composer
+            .apply_pane_style(2, 1, "#ffffff", 0)
+            .expect("set style");
+
+        let mut images = vec![
+            InputImage::new(1, 1, vec![0, 0, 0, 255]),
+            InputImage::new(1, 1, vec![0, 0, 0, 255]),
+        ];
+        let error = composer.apply_pane_styles(&mut images).unwrap_err();
+
+        assert_eq!(error, "pane style index 2 has no matching image");
+    }
+
+    #[test]
+    fn rejects_invalid_pane_style_color() {
+        let mut composer = Composer::default();
+        let error = composer.apply_pane_style(0, 2, "zzzzzz", 0).unwrap_err();
+
+        assert!(error.contains("invalid hex color component"));
+        assert!(composer.pane_styles.is_empty());
     }
 }
