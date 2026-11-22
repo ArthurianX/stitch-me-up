@@ -10,8 +10,6 @@ pub enum ComposeError {
         expected: usize,
         actual: usize,
     },
-    #[error("layout {0} is not implemented yet")]
-    UnsupportedLayout(&'static str),
     #[error("grid layouts require at least one column")]
     InvalidGridColumns,
     #[error("before-after layout requires exactly two images")]

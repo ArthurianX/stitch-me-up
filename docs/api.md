@@ -249,7 +249,6 @@ filesystem access.
 | --- | --- |
 | `NotEnoughImages` | `at least two images are required` |
 | `InvalidPixelBuffer { index, expected, actual }` | `image {index} has invalid RGBA buffer length: expected {expected}, got {actual}` |
-| `UnsupportedLayout(&'static str)` | `layout {0} is not implemented yet` (no layout is currently unimplemented) |
 | `InvalidGridColumns` | `grid layouts require at least one column` |
 | `BeforeAfterRequiresTwo` | `before-after layout requires exactly two images` |
 | `DividerRequiresBeforeAfter` | `a divider is only supported by the before-after layout` |
