@@ -6,7 +6,7 @@ This project is intentionally about composition, not panorama stitching or compu
 
 ## Status
 
-The repository now contains:
+The repository contains a `v0.4.0` workspace:
 
 - a Cargo workspace
 - a pure Rust core crate for layout planning and rendering
@@ -57,6 +57,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
 - Options: per-axis spacing (`Spacing { x, y }` — uniform via `--spacing`, overridden per axis by `--spacing-x`/`--spacing-y`), grid column weights, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
+- Per-image decoration overrides: `InputImage::style` (core) replaces the global frame/corner radius for one pane; the CLI gets `--pane-style <INDEX>:<KEY=VALUE>[,...]` (1-based, repeatable) and the WASM adapter gets `set_pane_style` / `clear_pane_style` (0-based).
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
 - Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG
@@ -79,11 +80,20 @@ math and `CanvasPlan` stay untouched.
   inside the gap, otherwise planning reports the gap width, and its alpha composites like
   everything else.
 - CLI flags: `--frame-width`, `--frame-color`, `--corner-radius`, `--divider-width`,
-  `--divider-color`.
+  `--divider-color`, plus `--pane-style INDEX:key=value,...` per-image overrides.
 
 ```bash
 stitch-me-up combine --layout before-after --spacing 12 --frame-width 4 --frame-color "#000000" \
   --corner-radius 12 --divider-width 4 --divider-color "#ffffff" --output pair.png before.png after.png
+```
+
+Per-image overrides merge per key over the global flags (second pane gets an amber frame,
+fourth gets no frame):
+
+```bash
+stitch-me-up combine --layout grid --columns 2 --frame-width 4 --corner-radius 12 \
+  --pane-style 2:frame-color=#f59e0b,corner-radius=20 --pane-style 4:frame-width=0 \
+  --output grid.png a.png b.png c.png d.png
 ```
 
 ## CLI Example

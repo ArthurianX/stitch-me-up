@@ -158,6 +158,9 @@ A 40x30 and a 20x60 image become 40x30 and 20x60 → both scaled to height 60: w
   `divider width 4 exceeds the 2px gap between panes; increase spacing` — and using a
   non-zero divider with any other layout fails with
   `a divider is only supported by the before-after layout`.
+- Per-image styles (`--pane-style`, 1-based, repeatable) override the global frame and
+radius for that pane only: a matching pane uses exactly the override, a non-matching
+pane keeps the global style. Geometry and canvas size never change.
 - All decoration composites source-over against the background, so `#RRGGBBAA` colors
   blend rather than replace.
 

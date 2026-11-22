@@ -13,9 +13,8 @@ lives in `stitch-core`; this crate only bridges types.
 wasm-pack build crates/stitch-wasm --target web --out-dir ../../examples/web/pkg
 ```
 
-The web example arrives in the next roadmap task; until it exists this command simply
-creates `examples/web/pkg`. To check the crate compiles for the web target without
-wasm-pack:
+The generated `pkg/` directory backs the [web example](../../examples/web/README.md).
+To check the crate compiles for the web target without wasm-pack:
 
 ```bash
 rustup target add wasm32-unknown-unknown
@@ -35,6 +34,8 @@ composer.set_layout('before-after', 0);
 composer.set_spacing(12, 12);
 composer.set_background('#ffffff');
 composer.set_corner_radius(8);
+// Per-image style override (0-based); remove with clear_pane_style.
+composer.set_pane_style(1, 4, '#f59e0b', 20);
 
 const png = composer.compose([new Uint8Array(await beforeFile.arrayBuffer()), new Uint8Array(await afterFile.arrayBuffer())]);
 const url = URL.createObjectURL(new Blob([png], { type: 'image/png' }));

@@ -13,12 +13,19 @@ pub struct InputImage {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u8>,   // RGBA8, row-major
+    /// Overrides `ComposeOptions::pane_style` for this pane; `None` inherits it.
+    pub style: Option<PaneStyle>,
 }
 
 impl InputImage {
+    pub fn new(width: u32, height: u32, pixels: Vec<u8>) -> Self;  // style: None
     pub fn expected_len(&self) -> Option<usize>;  // width * height * 4, overflow-checked
 }
 ```
+
+`InputImage::new` leaves `style` unset, so an image built this way always inherits the
+global `ComposeOptions::pane_style`; setting `style = Some(…)` afterwards attaches an
+override. The PNG/JPEG loaders always return `style: None`.
 
 ### `ComposedImage`
 
@@ -195,6 +202,8 @@ Defaults: `layout: VerticalStack`, `spacing: Spacing::default()` (both axes 0),
 `padding: Insets::default()` (all 0),
 `background: RgbaColor::WHITE`, `alignment: Start`, `resize_mode: None`,
 `pane_style: PaneStyle::default()`, `divider: None`, `column_weights: Vec::new()`.
+`pane_style` is the global fallback: every pane without an `InputImage::style`
+override uses it.
 Note that the CLI uses different defaults for some options — see the
 [CLI reference](cli.md).
 
@@ -276,6 +285,9 @@ filesystem access.
 - **Corner radius** is a hard-edged mask computed with integer squared distances, no
   antialiasing, clamped to half the smaller pane dimension; larger values are not an
   error and outside pixels show the background.
+- **Per-image styles** resolve at render time: `InputImage::style` replaces the global
+  pane style for that pane, including stripping the global frame when the override has
+  no frame; geometry and canvas size are unchanged.
 - **Compositing is source-over**: fully transparent source pixels are skipped, opaque
   ones copied, and semi-transparent ones blended with an exact integer denominator.
   Frames, dividers, and images all blend the same way against the background.

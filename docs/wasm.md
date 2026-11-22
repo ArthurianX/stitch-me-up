@@ -46,6 +46,8 @@ radius 0, no divider).
 | `set_corner_radius(radius)` | pixels; clamped to half the smaller pane dimension |
 | `set_column_weights(weights)` | `Uint32Array` of relative grid column widths; count must match the layout's column count, empty array keeps auto sizing |
 | `set_divider(width, hex)` | width `0` disables the divider but still validates the color. Setting a non-zero divider and then composing a non-`before-after` layout throws |
+| `set_pane_style(index, frameWidth, frameColorHex, cornerRadius)` | 0-based input index; stores a complete per-pane style override. `frameWidth == 0` disables that pane's frame while still validating the color |
+| `clear_pane_style(index)` | Removes the override; the pane inherits the global style again |
 
 ### `compose(images)`
 
@@ -60,6 +62,10 @@ const url = URL.createObjectURL(new Blob([png], { type: "image/png" }));
 Every element must be a `Uint8Array` of PNG or JPEG bytes; the return value is a
 `Uint8Array` of PNG bytes.
 
+Stored per-pane styles are applied to the decoded images after decoding. An index with
+no matching input throws, so a stale `set_pane_style(2, ...)` with only one input fails
+that compose call.
+
 ## Error behavior
 
 Every failure throws a JavaScript `Error` whose message is the Rust error text, so typos
@@ -72,7 +78,8 @@ surface immediately at the setter rather than at compose time:
   `before-after layout requires exactly two images`,
   `a divider is only supported by the before-after layout`,
   `divider width 4 exceeds the 2px gap between panes; increase spacing`,
-  `grid layouts require at least one column`, `image I/O error: ...`
+  `grid layouts require at least one column`, `image I/O error: ...`,
+  `pane style index N has no matching image`
 
 ## Limitations
 

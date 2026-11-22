@@ -37,6 +37,18 @@ stitch-me-up combine --layout vertical --padding 8 --padding-left 32 --output ou
 stitch-me-up combine --layout before-after --spacing 12 --frame-width 4 --frame-color "#000000" --corner-radius 12 --divider-width 4 --divider-color "#ffffff" --output pair.png before.png after.png
 ```
 
+## Per-Image Overrides
+
+```bash
+stitch-me-up combine --layout grid --columns 2 --frame-width 4 --corner-radius 12 \
+  --pane-style 2:frame-color=#f59e0b,corner-radius=20 \
+  --pane-style 4:frame-width=0 \
+  --output grid.png a.png b.png c.png d.png
+```
+
+`--pane-style` is repeatable; `INDEX` is 1-based. Keys override the global frame and
+radius per pane only; `frame-width=0` disables the frame.
+
 ## Notes
 
 - The CLI expects decoded-image support from the sibling `stitch-core` crate.

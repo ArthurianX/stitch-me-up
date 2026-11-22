@@ -50,7 +50,7 @@ Decision log:
 
 - [x] Per-axis spacing (`Spacing { x, y }`, with `--spacing-x` / `--spacing-y`)
 - [x] Grid column weights for uneven columns
-- [ ] Per-image style overrides (new input shape; breaking change)
+- [x] Per-image style overrides (new input shape; breaking change)
 
 Decision log:
 

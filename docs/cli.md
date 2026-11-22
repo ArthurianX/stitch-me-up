@@ -32,6 +32,7 @@ stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 | `--corner-radius <N>` | `0` | Corner radius in pixels applied to each image |
 | `--divider-width <N>` | `0` | Divider width in pixels between before-after panes (`0` disables the divider) |
 | `--divider-color <COLOR>` | `#000000` | Divider color as `#RRGGBB` or `#RRGGBBAA` |
+| `--pane-style <SPEC>` | unset, repeatable | Per-image decoration override. `SPEC` is `INDEX:KEY=VALUE[,KEY=VALUE...]`; `INDEX` is `1`-based; keys are `frame-width` (u32), `frame-color` (`#RRGGBB`/`#RRGGBBAA`), `corner-radius` (u32) |
 | `-h, --help` | — | Print help |
 
 Value rules:
@@ -49,6 +50,12 @@ Value rules:
   case-sensitively by clap.
 - `--column-weights` is only valid with `--layout grid`. It must list exactly
   `--columns` weights, each at least `1`; otherwise the run fails before rendering.
+- `--pane-style` overrides start from the global style fields (`--frame-width`,
+  `--frame-color`, `--corner-radius`) and merge per key; key order never matters and a
+  repeated `INDEX` or `KEY` keeps the later value. `frame-width=0` disables the frame for
+  that pane; `frame-color` alone with the default global `frame-width 0` is accepted and
+  validated but unused, exactly like the global flag. `INDEX` must point at an existing
+  input (`1` is the first image).
 - `--alignment` defaults to `center` in the CLI although the core default is `start`.
 
 ## Examples
@@ -81,6 +88,16 @@ Weighted grid columns (the second column is twice the first):
 ```bash
 stitch-me-up combine --layout grid --columns 2 --column-weights 1,2 \
   --output weighted.png a.png b.png c.png
+```
+
+Per-image overrides (second pane gets a amber frame, fourth gets no frame):
+
+```bash
+stitch-me-up combine --layout grid --columns 2 \
+  --frame-width 4 --corner-radius 12 \
+  --pane-style 2:frame-color=#f59e0b,corner-radius=20 \
+  --pane-style 4:frame-width=0 \
+  --output grid.png a.png b.png c.png d.png
 ```
 
 The runnable [`examples/cli/compose.sh`](../examples/cli/compose.sh) wraps a similar
@@ -128,6 +145,16 @@ without a `Caused by:` chain (these are CLI-level checks, not core errors):
 
 - `before-after layout requires exactly 2 input images`
 - `grid layout requires at least 1 column`
+
+The CLI also rejects malformed `--pane-style` specs after parsing, before loading any
+input (single-line errors, no `Caused by:` chain):
+
+- `pane style index N is out of range for M images` (N is 1-based; `0` and too large both fail)
+- `invalid pane style "…"` for a spec without `<index>:<key>=<value>`
+- `unknown pane style key "…"` for a key outside `frame-width`, `frame-color`, `corner-radius`
+- `invalid frame-width value "…"`, `invalid corner-radius value "…"`, or a bad color message
+  (`expected color in #RRGGBB or #RRGGBBAA format`, `invalid hex color component`)
+
 
 Malformed arguments (unknown flag, unparsable color, missing `--output`) exit `2` with
 clap's usage message. Successful runs print `Wrote <output path>` and exit `0`.

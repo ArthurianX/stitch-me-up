@@ -21,11 +21,7 @@ fn solid(w: u32, h: u32, color: [u8; 4]) -> InputImage {
         pixels.extend_from_slice(&color);
     }
 
-    InputImage {
-        width: w,
-        height: h,
-        pixels,
-    }
+    InputImage::new(w, h, pixels)
 }
 
 let images = vec![solid(4, 2, [255, 0, 0, 255]), solid(2, 4, [0, 255, 0, 255])];
@@ -33,6 +29,10 @@ let composed: ComposedImage = compose(&images, &ComposeOptions::default()).unwra
 
 assert_eq!((composed.width, composed.height), (4, 6));
 ```
+
+`InputImage::new` leaves `style` unset, so every image built this way inherits
+`ComposeOptions::pane_style`. Setting `style = Some(…)` replaces the global frame and
+corner radius for that pane only; geometry and canvas size are unchanged.
 
 ## Layouts
 
