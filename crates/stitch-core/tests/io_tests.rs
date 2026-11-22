@@ -162,3 +162,19 @@ fn parse_hex_color_variants() {
         "invalid hex color component"
     );
 }
+
+#[test]
+fn loaders_leave_style_unset() {
+    let source = solid_image(2, 1, [255, 0, 0, 255]);
+    let bytes = png_bytes(&source);
+
+    let from_bytes = load_image_from_bytes(&bytes).expect("load bytes");
+    assert_eq!(from_bytes.style, None);
+
+    let path = temp_path("style.png");
+    fs::write(&path, &bytes).expect("write png");
+    let from_path = load_image_from_path(&path).expect("load path");
+    assert_eq!(from_path.style, None);
+
+    let _ = fs::remove_file(path);
+}

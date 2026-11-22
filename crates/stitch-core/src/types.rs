@@ -173,9 +173,21 @@ pub struct InputImage {
     pub width: u32,
     pub height: u32,
     pub pixels: Vec<u8>,
+    /// Overrides `ComposeOptions::pane_style` for this pane; `None` inherits the global style.
+    pub style: Option<PaneStyle>,
 }
 
 impl InputImage {
+    /// An undecorated image (`style: None`).
+    pub fn new(width: u32, height: u32, pixels: Vec<u8>) -> Self {
+        Self {
+            width,
+            height,
+            pixels,
+            style: None,
+        }
+    }
+
     pub fn expected_len(&self) -> Option<usize> {
         let pixels = u64::from(self.width).checked_mul(u64::from(self.height))?;
         let bytes = pixels.checked_mul(4)?;

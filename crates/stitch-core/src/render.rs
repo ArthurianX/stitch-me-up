@@ -22,13 +22,14 @@ pub fn render(
     for placed in &plan.placed_images {
         let source = &images[placed.index];
         let source_pixels = prepare_pixels(source, placed.width, placed.height)?;
+        let style = source.style.as_ref().unwrap_or(&options.pane_style);
         blit_image(
             &mut pixels,
             plan.width,
             plan.height,
             placed,
             &source_pixels,
-            &options.pane_style,
+            style,
         )?;
     }
 

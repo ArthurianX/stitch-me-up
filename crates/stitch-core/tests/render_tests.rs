@@ -858,3 +858,107 @@ fn default_divider_keeps_output_identical() {
         [255, 255, 255, 255]
     );
 }
+
+#[test]
+fn global_style_applies_when_all_styles_are_none() {
+    let images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 1,
+                color: RgbaColor::WHITE,
+            }),
+            corner_radius: 0,
+        },
+        RgbaColor {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    );
+
+    let composed = compose(&images, &options).expect("compose global frames");
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [255, 255, 255, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 4),
+        [255, 255, 255, 255]
+    );
+}
+
+#[test]
+fn per_image_style_replaces_global_style() {
+    let mut images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    images[0].style = Some(PaneStyle::default());
+    let options = pane_options(
+        PaneStyle {
+            frame: Some(Frame {
+                width: 1,
+                color: RgbaColor::WHITE,
+            }),
+            corner_radius: 0,
+        },
+        RgbaColor {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    );
+
+    let composed = compose(&images, &options).expect("compose mixed styles");
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 4),
+        [255, 255, 255, 255]
+    );
+}
+
+#[test]
+fn per_image_style_adds_decoration_to_one_pane() {
+    let mut images = vec![
+        solid_image(4, 4, [255, 0, 0, 255]),
+        solid_image(4, 4, [0, 255, 0, 255]),
+    ];
+    images[1].style = Some(PaneStyle {
+        frame: Some(Frame {
+            width: 1,
+            color: RgbaColor::WHITE,
+        }),
+        corner_radius: 0,
+    });
+    let options = pane_options(
+        PaneStyle::default(),
+        RgbaColor {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        },
+    );
+
+    let composed = compose(&images, &options).expect("compose one decorated pane");
+
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 0),
+        [255, 0, 0, 255]
+    );
+    assert_eq!(
+        pixel_at(&composed.pixels, composed.width, 0, 4),
+        [255, 255, 255, 255]
+    );
+}
