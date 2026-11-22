@@ -117,7 +117,7 @@ pub struct CombineArgs {
     #[arg(
         long = "pane-style",
         value_name = "INDEX:KEY=VALUE[,...]",
-        help = "Per-image decoration override, 1-based and repeatable, e.g. 1:frame-width=4,frame-color=#ff0000"
+        help = "Per-image decoration override, 1-based and repeatable, e.g. \"1:frame-width=4,frame-color=#ff0000\" (quote specs containing #)"
     )]
     pub pane_styles: Vec<String>,
 

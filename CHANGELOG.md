@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
+## 0.4.1 — 2026-11-22
+
+### Fixed
+
+- `--pane-style` validation errors are single-line (no `Caused by:` chain), matching
+  the CLI reference.
+- WASM docs place `pane style index N has no matching image` under compose-time, where
+  it is actually thrown.
+
+### Documentation
+
+- All `--pane-style` examples quote specs containing `#`; the CLI reference explains why.
+- Added a byte-for-byte test that `None` per-image styles match an explicit global style.
+- Indexed the design and plan documents, and removed a duplicate changelog entry.
+
 ## 0.4.0 — 2026-11-22
 
 First tagged release; the 0.1–0.4 milestones were developed before this tag.
@@ -23,14 +38,7 @@ First tagged release; the 0.1–0.4 milestones were developed before this tag.
 
 - `ComposeOptions::spacing` is `Spacing`; `Spacing::all(n)` reproduces the old uniform value.
 - `InputImage` gained `style: Option<PaneStyle>`; construct it with `InputImage::new`.
-- Removed the dead `stitch_core::options` re-export shim and `ComposeError::UnsupportedLayout`.
 
 ### Removed
 
-- `ComposeError::UnsupportedLayout` (unused since all layouts were implemented).
-
-## 0.1.0 — 2026-11-19
-
-- Cargo workspace with `stitch-core`, `stitch-cli`, and `stitch-wasm`.
-- Layouts: vertical stack, horizontal stack, grid, before-after.
-- Resize modes, per-axis padding, RGBA compositing, PNG/JPEG I/O, CLI, WASM adapter.
+- The `stitch_core::options` re-export shim and `ComposeError::UnsupportedLayout`.

@@ -68,18 +68,24 @@ that compose call.
 
 ## Error behavior
 
-Every failure throws a JavaScript `Error` whose message is the Rust error text, so typos
-surface immediately at the setter rather than at compose time:
+Every failure throws a JavaScript `Error` whose message is the Rust error text. Setter
+typos surface immediately; core and index problems surface at `compose`.
+
+Setter errors:
 
 - unknown strings: `unknown layout "panorama"; expected vertical, horizontal, grid, or before-after`
 - bad colors: `expected color in #RRGGBB or #RRGGBBAA format`, `invalid hex color component`
 - non-`Uint8Array` input: `each image must be a Uint8Array`
+
+Compose errors:
+
 - core errors propagate verbatim, e.g. `at least two images are required`,
   `before-after layout requires exactly two images`,
   `a divider is only supported by the before-after layout`,
   `divider width 4 exceeds the 2px gap between panes; increase spacing`,
-  `grid layouts require at least one column`, `image I/O error: ...`,
-  `pane style index N has no matching image`
+  `grid layouts require at least one column`, `image I/O error: ...`
+- `pane style index N has no matching image`: a stored `set_pane_style` index has no
+  corresponding input image
 
 ## Limitations
 

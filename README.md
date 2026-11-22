@@ -6,7 +6,7 @@ This project is intentionally about composition, not panorama stitching or compu
 
 ## Status
 
-The repository contains a `v0.4.0` workspace:
+The repository contains a `v0.4.1` workspace:
 
 - a Cargo workspace
 - a pure Rust core crate for layout planning and rendering
@@ -92,7 +92,7 @@ fourth gets no frame):
 
 ```bash
 stitch-me-up combine --layout grid --columns 2 --frame-width 4 --corner-radius 12 \
-  --pane-style 2:frame-color=#f59e0b,corner-radius=20 --pane-style 4:frame-width=0 \
+  --pane-style "2:frame-color=#f59e0b,corner-radius=20" --pane-style 4:frame-width=0 \
   --output grid.png a.png b.png c.png d.png
 ```
 
