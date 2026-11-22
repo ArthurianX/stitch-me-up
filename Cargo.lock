@@ -334,7 +334,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
 name = "stitch-cli"
-version = "0.1.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -343,7 +343,7 @@ dependencies = [
 
 [[package]]
 name = "stitch-core"
-version = "0.1.0"
+version = "0.4.0"
 dependencies = [
  "image",
  "thiserror",
@@ -351,7 +351,7 @@ dependencies = [
 
 [[package]]
 name = "stitch-wasm"
-version = "0.1.0"
+version = "0.4.0"
 dependencies = [
  "js-sys",
  "stitch-core",
