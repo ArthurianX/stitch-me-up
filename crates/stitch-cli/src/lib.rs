@@ -115,6 +115,13 @@ pub struct CombineArgs {
     pub column_weights: Vec<u32>,
 
     #[arg(
+        long = "pane-style",
+        value_name = "INDEX:KEY=VALUE[,...]",
+        help = "Per-image decoration override, 1-based and repeatable, e.g. 1:frame-width=4,frame-color=#ff0000"
+    )]
+    pub pane_styles: Vec<String>,
+
+    #[arg(
         long,
         default_value_t = 0,
         help = "Frame width in pixels drawn inside each image"
@@ -194,7 +201,17 @@ pub fn combine(args: CombineArgs) -> Result<()> {
         bail!("grid layout requires at least 1 column");
     }
 
-    let images = args
+    let overrides = pane_style_overrides(
+        &args.pane_styles,
+        args.inputs.len(),
+        GlobalPaneStyle {
+            frame_width: args.frame_width,
+            frame_color: args.frame_color,
+            corner_radius: args.corner_radius,
+        },
+    )?;
+
+    let mut images = args
         .inputs
         .iter()
         .map(|path| {
@@ -202,6 +219,10 @@ pub fn combine(args: CombineArgs) -> Result<()> {
                 .with_context(|| format!("failed to load input image {}", path.display()))
         })
         .collect::<Result<Vec<_>>>()?;
+
+    for (image, style) in images.iter_mut().zip(overrides) {
+        image.style = style;
+    }
 
     let options = ComposeOptions {
         layout: layout_kind(args.layout, args.columns),
@@ -286,6 +307,102 @@ pub fn pane_style(frame_width: u32, frame_color: RgbaColor, corner_radius: u32) 
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct GlobalPaneStyle {
+    pub frame_width: u32,
+    pub frame_color: RgbaColor,
+    pub corner_radius: u32,
+}
+
+/// Per-pane overrides, resolved against the global flags. `INDEX` is 1-based.
+/// Each spec is `INDEX:KEY=VALUE[,KEY=VALUE...]`; keys are `frame-width` (u32),
+/// `corner-radius` (u32), and `frame-color` (`#RRGGBB`/`#RRGGBBAA`).
+/// Repeated index/key: later wins. Order within a spec never matters.
+pub fn pane_style_overrides(
+    specs: &[String],
+    image_count: usize,
+    global: GlobalPaneStyle,
+) -> Result<Vec<Option<PaneStyle>>> {
+    #[derive(Default, Clone)]
+    struct StyleFields {
+        frame_width: Option<u32>,
+        frame_color: Option<RgbaColor>,
+        corner_radius: Option<u32>,
+    }
+
+    let mut fields = vec![StyleFields::default(); image_count];
+
+    for spec in specs {
+        let (index, assignments) = spec.split_once(':').context(format!(
+            "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
+        ))?;
+
+        let index: usize = index.parse().context(format!(
+            "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
+        ))?;
+
+        if index == 0 || index > image_count {
+            bail!("pane style index {index} is out of range for {image_count} images");
+        }
+
+        for assignment in assignments.split(',') {
+            let (key, value) = assignment.split_once('=').context(format!(
+                "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
+            ))?;
+            let key = key.trim();
+            let value = value.trim();
+            let slot = &mut fields[index - 1];
+
+            match key {
+                "frame-width" => {
+                    slot.frame_width = Some(
+                        value
+                            .parse()
+                            .with_context(|| format!("invalid frame-width value \"{value}\""))?,
+                    )
+                }
+                "corner-radius" => {
+                    slot.corner_radius = Some(
+                        value
+                            .parse()
+                            .with_context(|| format!("invalid corner-radius value \"{value}\""))?,
+                    )
+                }
+                "frame-color" => {
+                    slot.frame_color = Some(
+                        RgbaColor::parse_hex(value)
+                            .with_context(|| format!("invalid frame-color \"{value}\""))?,
+                    )
+                }
+                other => {
+                    bail!(
+                        "unknown pane style key \"{other}\"; expected frame-width, frame-color, or corner-radius"
+                    )
+                }
+            }
+        }
+    }
+
+    let mut overrides = vec![None; image_count];
+    for (index, slot) in fields.into_iter().enumerate() {
+        if slot.frame_width.is_none() && slot.frame_color.is_none() && slot.corner_radius.is_none()
+        {
+            continue;
+        }
+
+        let width = slot.frame_width.unwrap_or(global.frame_width);
+        let color = slot.frame_color.unwrap_or(global.frame_color);
+        let corner_radius = slot.corner_radius.unwrap_or(global.corner_radius);
+
+        overrides[index] = Some(PaneStyle {
+            frame: (width > 0).then_some(Frame { width, color }),
+            corner_radius,
+        });
+    }
+
+    Ok(overrides)
+}
+
 pub fn divider(width: u32, color: RgbaColor) -> Option<Divider> {
     (width > 0).then_some(Divider { width, color })
 }
@@ -322,6 +439,7 @@ mod tests {
                 assert!(matches!(args.resize_mode, ResizeModeArg::None));
                 assert_eq!(args.spacing, 0);
                 assert_eq!(args.padding, 0);
+                assert!(args.pane_styles.is_empty());
                 assert_eq!(
                     args.background,
                     RgbaColor {
@@ -560,6 +678,7 @@ mod tests {
             resize_mode: ResizeModeArg::None,
             columns: 2,
             column_weights: Vec::new(),
+            pane_styles: Vec::new(),
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,
@@ -593,6 +712,7 @@ mod tests {
             resize_mode: ResizeModeArg::None,
             columns: 0,
             column_weights: Vec::new(),
+            pane_styles: Vec::new(),
             frame_width: 0,
             frame_color: RgbaColor::WHITE,
             corner_radius: 0,
@@ -632,6 +752,201 @@ mod tests {
         assert_eq!(alignment(AlignmentArg::Start), Alignment::Start);
         assert_eq!(alignment(AlignmentArg::Center), Alignment::Center);
         assert_eq!(alignment(AlignmentArg::End), Alignment::End);
+    }
+
+    #[test]
+    fn parses_repeatable_pane_style_flags() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--pane-style",
+            "1:frame-width=4,frame-color=#11223344,corner-radius=7",
+            "--pane-style",
+            "3:corner-radius=2",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+            "c.png",
+        ]);
+
+        match cli.command {
+            Commands::Combine(args) => assert_eq!(
+                args.pane_styles,
+                vec![
+                    "1:frame-width=4,frame-color=#11223344,corner-radius=7".to_string(),
+                    "3:corner-radius=2".to_string(),
+                ]
+            ),
+        }
+    }
+
+    fn global_style() -> GlobalPaneStyle {
+        GlobalPaneStyle {
+            frame_width: 2,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 6,
+        }
+    }
+
+    #[test]
+    fn pane_style_overrides_merge_with_global_fields() {
+        let overrides =
+            pane_style_overrides(&["1:frame-color=#11223344".into()], 2, global_style()).unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: Some(Frame {
+                    width: 2,
+                    color: RgbaColor {
+                        r: 0x11,
+                        g: 0x22,
+                        b: 0x33,
+                        a: 0x44,
+                    },
+                }),
+                corner_radius: 6,
+            })
+        );
+        assert_eq!(overrides[1], None);
+    }
+
+    #[test]
+    fn pane_style_override_enables_frame_with_global_color() {
+        let global = GlobalPaneStyle {
+            frame_width: 0,
+            frame_color: RgbaColor {
+                r: 255,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            corner_radius: 0,
+        };
+        let overrides = pane_style_overrides(&["1:frame-width=3".into()], 2, global).unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: Some(Frame {
+                    width: 3,
+                    color: RgbaColor {
+                        r: 255,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                }),
+                corner_radius: 0,
+            })
+        );
+    }
+
+    #[test]
+    fn pane_style_frame_width_zero_disables_global_frame() {
+        let overrides =
+            pane_style_overrides(&["1:frame-width=0".into()], 2, global_style()).unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: None,
+                corner_radius: 6,
+            })
+        );
+    }
+
+    #[test]
+    fn pane_style_indices_are_one_based_and_range_checked() {
+        let error =
+            pane_style_overrides(&["0:corner-radius=1".into()], 2, global_style()).unwrap_err();
+        assert_eq!(
+            format!("{error:#}"),
+            "pane style index 0 is out of range for 2 images"
+        );
+
+        let error =
+            pane_style_overrides(&["3:corner-radius=1".into()], 2, global_style()).unwrap_err();
+        assert_eq!(
+            format!("{error:#}"),
+            "pane style index 3 is out of range for 2 images"
+        );
+    }
+
+    #[test]
+    fn pane_style_rejects_malformed_specs() {
+        let cases = [
+            ("1", "invalid pane style \"1\""),
+            ("1:radius=2", "unknown pane style key \"radius\""),
+            ("1:frame-width=x", "invalid frame-width value \"x\""),
+            ("1:frame-color=zzzzzz", "invalid hex color component"),
+        ];
+
+        for (spec, expected) in cases {
+            let error = pane_style_overrides(&[spec.into()], 2, global_style()).unwrap_err();
+            assert!(format!("{error:#}").contains(expected), "{spec}: {error:#}");
+        }
+    }
+
+    #[test]
+    fn pane_style_last_repeated_key_wins() {
+        let overrides = pane_style_overrides(
+            &["1:corner-radius=2,corner-radius=9".into()],
+            2,
+            global_style(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: Some(Frame {
+                    width: 2,
+                    color: RgbaColor::WHITE,
+                }),
+                corner_radius: 9,
+            })
+        );
+    }
+
+    #[test]
+    fn pane_style_repeated_index_merges() {
+        let overrides = pane_style_overrides(
+            &["1:frame-width=9".into(), "1:corner-radius=3".into()],
+            2,
+            global_style(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: Some(Frame {
+                    width: 9,
+                    color: RgbaColor::WHITE,
+                }),
+                corner_radius: 3,
+            })
+        );
+    }
+
+    #[test]
+    fn pane_style_color_without_width_is_accepted_and_inert() {
+        let global = GlobalPaneStyle {
+            frame_width: 0,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 0,
+        };
+        let overrides = pane_style_overrides(&["1:frame-color=#ff0000".into()], 2, global).unwrap();
+
+        assert_eq!(
+            overrides[0],
+            Some(PaneStyle {
+                frame: None,
+                corner_radius: 0,
+            })
+        );
     }
 
     #[test]
