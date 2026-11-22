@@ -2,7 +2,7 @@ mod color;
 
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
     compose, load_image_from_path, save_png, Alignment, ComposeOptions, Divider, Frame, Insets,
@@ -307,22 +307,26 @@ pub fn pane_style(frame_width: u32, frame_color: RgbaColor, corner_radius: u32) 
     }
 }
 
+/// The raw global decoration flags. Kept as fields rather than a `PaneStyle` because
+/// `--frame-color` must survive `--frame-width 0` so a per-pane `frame-width` can reuse it.
 #[derive(Debug, Clone, Copy)]
-pub struct GlobalPaneStyle {
-    pub frame_width: u32,
-    pub frame_color: RgbaColor,
-    pub corner_radius: u32,
+struct GlobalPaneStyle {
+    frame_width: u32,
+    frame_color: RgbaColor,
+    corner_radius: u32,
 }
 
 /// Per-pane overrides, resolved against the global flags. `INDEX` is 1-based.
 /// Each spec is `INDEX:KEY=VALUE[,KEY=VALUE...]`; keys are `frame-width` (u32),
 /// `corner-radius` (u32), and `frame-color` (`#RRGGBB`/`#RRGGBBAA`).
 /// Repeated index/key: later wins. Order within a spec never matters.
-pub fn pane_style_overrides(
+fn pane_style_overrides(
     specs: &[String],
     image_count: usize,
     global: GlobalPaneStyle,
 ) -> Result<Vec<Option<PaneStyle>>> {
+    const GRAMMAR: &str = "expected <index>:<key>=<value>[,<key>=<value>...]";
+
     #[derive(Default, Clone)]
     struct StyleFields {
         frame_width: Option<u32>,
@@ -333,22 +337,23 @@ pub fn pane_style_overrides(
     let mut fields = vec![StyleFields::default(); image_count];
 
     for spec in specs {
-        let (index, assignments) = spec.split_once(':').context(format!(
-            "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
-        ))?;
+        let (index, assignments) = spec
+            .split_once(':')
+            .ok_or_else(|| anyhow!("invalid pane style \"{spec}\": {GRAMMAR}"))?;
 
-        let index: usize = index.parse().context(format!(
-            "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
-        ))?;
+        let index: usize = index
+            .trim()
+            .parse()
+            .map_err(|_| anyhow!("invalid pane style \"{spec}\": {GRAMMAR}"))?;
 
         if index == 0 || index > image_count {
             bail!("pane style index {index} is out of range for {image_count} images");
         }
 
         for assignment in assignments.split(',') {
-            let (key, value) = assignment.split_once('=').context(format!(
-                "invalid pane style \"{spec}\": expected <index>:<key>=<value>[,<key>=<value>...]"
-            ))?;
+            let (key, value) = assignment
+                .split_once('=')
+                .ok_or_else(|| anyhow!("invalid pane style \"{spec}\": {GRAMMAR}"))?;
             let key = key.trim();
             let value = value.trim();
             let slot = &mut fields[index - 1];
@@ -358,20 +363,20 @@ pub fn pane_style_overrides(
                     slot.frame_width = Some(
                         value
                             .parse()
-                            .with_context(|| format!("invalid frame-width value \"{value}\""))?,
+                            .map_err(|_| anyhow!("invalid frame-width value \"{value}\""))?,
                     )
                 }
                 "corner-radius" => {
                     slot.corner_radius = Some(
                         value
                             .parse()
-                            .with_context(|| format!("invalid corner-radius value \"{value}\""))?,
+                            .map_err(|_| anyhow!("invalid corner-radius value \"{value}\""))?,
                     )
                 }
                 "frame-color" => {
                     slot.frame_color = Some(
                         RgbaColor::parse_hex(value)
-                            .with_context(|| format!("invalid frame-color \"{value}\""))?,
+                            .map_err(|error| anyhow!("invalid frame-color \"{value}\": {error}"))?,
                     )
                 }
                 other => {
@@ -880,12 +885,20 @@ mod tests {
             ("1", "invalid pane style \"1\""),
             ("1:radius=2", "unknown pane style key \"radius\""),
             ("1:frame-width=x", "invalid frame-width value \"x\""),
-            ("1:frame-color=zzzzzz", "invalid hex color component"),
+            (
+                "1:frame-color=zzzzzz",
+                "invalid frame-color \"zzzzzz\": invalid hex color component",
+            ),
         ];
 
         for (spec, expected) in cases {
             let error = pane_style_overrides(&[spec.into()], 2, global_style()).unwrap_err();
-            assert!(format!("{error:#}").contains(expected), "{spec}: {error:#}");
+            let message = format!("{error:#}");
+            assert!(message.contains(expected), "{spec}: {message}");
+            assert!(
+                !message.contains('\n'),
+                "{spec} must be single-line: {message}"
+            );
         }
     }
 
