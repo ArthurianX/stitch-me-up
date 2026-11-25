@@ -1,5 +1,8 @@
 # Per-image Pane Styles + 0.4.0 Release Implementation Plan
 
+> **Status: executed** — shipped in v0.4.0, review fixes in v0.4.1. Boxes ticked retrospectively.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship `0.4.0` with per-image frames/corner radii, adapter parity, refreshed docs, and a `v0.4.0` tag.
@@ -47,13 +50,13 @@
   - `impl InputImage { pub fn new(width: u32, height: u32, pixels: Vec<u8>) -> Self }`
   - Rendering uses `image.style.as_ref().unwrap_or(&options.pane_style)` per placed pane.
 
-- [ ] **Step 1: Create the release branch**
+- [x] **Step 1: Create the release branch**
 
 ```bash
 git switch --create release/0.4.0
 ```
 
-- [ ] **Step 2: Add the breaking field and constructor**
+- [x] **Step 2: Add the breaking field and constructor**
 
 In `types.rs`, append `pub style: Option<PaneStyle>` to `InputImage` and add:
 
@@ -74,7 +77,7 @@ impl InputImage {
 
 Update both loaders in `image_io.rs` to return `InputImage::new(width, height, pixels)`. Update `tests/helpers.rs` `solid_image` to return `InputImage::new(width, height, pixels)`. Update the literal in `crates/stitch-core/README.md` in Task 5, not here.
 
-- [ ] **Step 3: Write the failing render tests**
+- [x] **Step 3: Write the failing render tests**
 
 Add to `render_tests.rs`:
 
@@ -142,12 +145,12 @@ fn per_image_style_adds_decoration_to_one_pane() {
 }
 ```
 
-- [ ] **Step 4: Run the new tests and verify they fail**
+- [x] **Step 4: Run the new tests and verify they fail**
 
 Run: `cargo test -p stitch-core --test render_tests per_image`
 Expected: `per_image_style_replaces_global_style` and `per_image_style_adds_decoration_to_one_pane` FAIL because rendering still applies the global style to every pane. `global_style_applies_when_all_styles_are_none` passes both before and after.
 
-- [ ] **Step 5: Resolve the style per pane in `render.rs`**
+- [x] **Step 5: Resolve the style per pane in `render.rs`**
 
 Inside the `for placed in &plan.placed_images` loop, replace `&options.pane_style` with:
 
@@ -161,12 +164,12 @@ blit_image(..., style)?;
 
 No other render or layout code changes.
 
-- [ ] **Step 6: Run the render tests**
+- [x] **Step 6: Run the render tests**
 
 Run: `cargo test -p stitch-core --test render_tests`
 Expected: PASS, including the three new tests.
 
-- [ ] **Step 7: Write the loader test**
+- [x] **Step 7: Write the loader test**
 
 Add to `io_tests.rs`:
 
@@ -188,12 +191,12 @@ fn loaders_leave_style_unset() {
 }
 ```
 
-- [ ] **Step 8: Run the full core suite**
+- [x] **Step 8: Run the full core suite**
 
 Run: `cargo test -p stitch-core`
 Expected: PASS (all unit, layout, render, I/O tests).
 
-- [ ] **Step 9: Format, lint, commit**
+- [x] **Step 9: Format, lint, commit**
 
 ```bash
 cargo fmt --all
@@ -217,7 +220,7 @@ git commit -m "feat(core)!: per-image pane styles"
   - `struct GlobalPaneStyle { pub frame_width: u32, pub frame_color: RgbaColor, pub corner_radius: u32 }`
   - `fn pane_style_overrides(specs: &[String], image_count: usize, global: GlobalPaneStyle) -> Result<Vec<Option<PaneStyle>>>`
 
-- [ ] **Step 1: Write the failing parser and resolver tests**
+- [x] **Step 1: Write the failing parser and resolver tests**
 
 Add to the CLI test module:
 
@@ -379,12 +382,12 @@ fn pane_style_color_without_width_is_accepted_and_inert() {
 
 Also add `assert!(args.pane_styles.is_empty());` to `parses_minimal_combine_command`, and add `pane_styles: Vec::new(),` to the two literal `CombineArgs { ... }` values in `rejects_before_after_with_more_than_two_inputs` and `rejects_grid_with_zero_columns`.
 
-- [ ] **Step 2: Run the tests and verify they fail**
+- [x] **Step 2: Run the tests and verify they fail**
 
 Run: `cargo test -p stitch-cli pane_style`
 Expected: FAIL to compile — `pane_styles`, `GlobalPaneStyle`, and `pane_style_overrides` do not exist.
 
-- [ ] **Step 3: Add the flag and helper types**
+- [x] **Step 3: Add the flag and helper types**
 
 In `CombineArgs`, after `column_weights`:
 
@@ -408,7 +411,7 @@ pub struct GlobalPaneStyle {
 }
 ```
 
-- [ ] **Step 4: Implement `pane_style_overrides`**
+- [x] **Step 4: Implement `pane_style_overrides`**
 
 Signature exactly:
 
@@ -432,7 +435,7 @@ Algorithm:
    Repeated keys overwrite, so later wins.
 5. Resolve each touched index: effective width = override or `global.frame_width`; effective color = override or `global.frame_color`; effective radius = override or `global.corner_radius`; produce `Some(PaneStyle { frame: (width > 0).then_some(Frame { width, color }), corner_radius })`. Untouched indices stay `None`.
 
-- [ ] **Step 5: Wire overrides into `combine`**
+- [x] **Step 5: Wire overrides into `combine`**
 
 Before loading images:
 
@@ -458,12 +461,12 @@ for (image, style) in images.iter_mut().zip(overrides) {
 
 The existing global `pane_style(args.frame_width, args.frame_color, args.corner_radius)` stays unchanged.
 
-- [ ] **Step 6: Run the CLI tests**
+- [x] **Step 6: Run the CLI tests**
 
 Run: `cargo test -p stitch-cli`
 Expected: PASS.
 
-- [ ] **Step 7: Format, lint, commit**
+- [x] **Step 7: Format, lint, commit**
 
 ```bash
 cargo fmt --all
@@ -488,7 +491,7 @@ git commit -m "feat(cli): per-image --pane-style overrides"
   - `fn apply_pane_styles(&self, images: &mut [InputImage]) -> Result<(), String>`
   - wasm exports `set_pane_style(index, frameWidth, frameColor, cornerRadius)` and `clear_pane_style(index)`.
 
-- [ ] **Step 1: Write the failing native tests**
+- [x] **Step 1: Write the failing native tests**
 
 Add to the wasm test module (and extend `composer_defaults_match_core_defaults` with `assert!(Composer::default().pane_styles.is_empty());`):
 
@@ -559,12 +562,12 @@ fn rejects_invalid_pane_style_color() {
 }
 ```
 
-- [ ] **Step 2: Run the wasm tests and verify they fail**
+- [x] **Step 2: Run the wasm tests and verify they fail**
 
 Run: `cargo test -p stitch-wasm`
 Expected: FAIL to compile — `pane_styles`, `apply_pane_style`, `apply_clear_pane_style`, `apply_pane_styles` do not exist.
 
-- [ ] **Step 3: Add state, setters, and helpers**
+- [x] **Step 3: Add state, setters, and helpers**
 
 - Import `PaneStyle` **unconditionally** (the `Composer` field is compiled on every target), e.g. change the existing `use stitch_core::ComposeOptions;` to `use stitch_core::{ComposeOptions, PaneStyle};`.
 - Add `InputImage` to the `#[cfg(any(target_arch = "wasm32", test))]` import block, and add `InputImage` and `PaneStyle` to the test module's `use stitch_core::{...}` list.
@@ -636,7 +639,7 @@ fn apply_pane_styles(&self, images: &mut [InputImage]) -> Result<(), String> {
 }
 ```
 
-- [ ] **Step 4: Apply styles during compose**
+- [x] **Step 4: Apply styles during compose**
 
 Replace the wasm `compose` body's `compose_to_png(&buffers, &self.options)` path. Under the wasm import block use `compose`, `encode_png`, and `load_image_from_bytes` instead of `compose_to_png`:
 
@@ -654,7 +657,7 @@ encode_png(&composed).map_err(js_error)
 
 Keep the existing `Uint8Array` validation and return type.
 
-- [ ] **Step 5: Run the wasm tests and wasm target check**
+- [x] **Step 5: Run the wasm tests and wasm target check**
 
 ```bash
 cargo test -p stitch-wasm
@@ -663,7 +666,7 @@ cargo check -p stitch-wasm --target wasm32-unknown-unknown
 
 Expected: both PASS.
 
-- [ ] **Step 6: Format, lint, commit**
+- [x] **Step 6: Format, lint, commit**
 
 ```bash
 cargo fmt --all
@@ -685,11 +688,11 @@ git commit -m "feat(wasm): per-index pane styles"
 **Interfaces:**
 - Produces: no `stitch_core::options` module, one `ComposeOptions`/`PaneStyle` re-export path (`crate::types`), no `ComposeError::UnsupportedLayout`.
 
-- [ ] **Step 1: Remove the shim and duplicate re-export**
+- [x] **Step 1: Remove the shim and duplicate re-export**
 
 Delete `crates/stitch-core/src/options.rs`. In `lib.rs`, remove `pub mod options;` and `pub use options::{ComposeOptions, PaneStyle};`. Keep the `types` re-export that already includes both names.
 
-- [ ] **Step 2: Remove the dead error variant**
+- [x] **Step 2: Remove the dead error variant**
 
 Delete the `UnsupportedLayout` variant from `ComposeError`. Confirm no Rust code references it:
 
@@ -699,11 +702,11 @@ rg "UnsupportedLayout"
 
 Expected: only `docs/api.md` remains.
 
-- [ ] **Step 3: Update the API docs table**
+- [x] **Step 3: Update the API docs table**
 
 Delete the `UnsupportedLayout` row from `docs/api.md`.
 
-- [ ] **Step 4: Verify the workspace**
+- [x] **Step 4: Verify the workspace**
 
 ```bash
 cargo fmt --all -- --check
@@ -713,7 +716,7 @@ cargo test --workspace
 
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A crates/stitch-core docs/api.md
@@ -739,14 +742,14 @@ git commit -m "refactor(core)!: drop options shim and unused error"
 - Consumes: the behavior implemented in Tasks 1–3 and the final error strings.
 - Produces: docs that describe the code.
 
-- [ ] **Step 1: Update `docs/api.md`**
+- [x] **Step 1: Update `docs/api.md`**
 
 - In the `InputImage` block, add `pub style: Option<PaneStyle>`, and `pub fn new(width: u32, height: u32, pixels: Vec<u8>) -> Self;` (style `None`).
 - Add a paragraph: `None` inherits `ComposeOptions::pane_style`; `Some(style)` replaces it wholesale for that pane, so `Some(PaneStyle::default())` renders a plain pane. The loaders always return `None`. Planning ignores style.
 - In the `ComposeOptions` defaults paragraph or behavior notes, state that `pane_style` is the global fallback.
 - Add a behavior bullet: "Per-image styles are resolved at render time; they never change pane geometry."
 
-- [ ] **Step 2: Update `docs/cli.md`**
+- [x] **Step 2: Update `docs/cli.md`**
 
 - Add the flag table row:
 
@@ -766,7 +769,7 @@ stitch-me-up combine --layout grid --columns 2 \
   --output grid.png a.png b.png c.png d.png
 ```
 
-- [ ] **Step 3: Update `docs/wasm.md`**
+- [x] **Step 3: Update `docs/wasm.md`**
 
 - Add setter rows:
 
@@ -778,24 +781,24 @@ stitch-me-up combine --layout grid --columns 2 \
 - Note in `compose`: stored overrides are applied by index; an index with no matching input throws `pane style index N has no matching image`.
 - Add the error string to the error list.
 
-- [ ] **Step 4: Update `docs/layouts.md`**
+- [x] **Step 4: Update `docs/layouts.md`**
 
 In "How decoration interacts", add a bullet: per-image `InputImage::style` (`--pane-style`) overrides the global frame/radius for that pane only; geometry and canvas size are unchanged.
 
-- [ ] **Step 5: Update `README.md` and `ROADMAP.md`**
+- [x] **Step 5: Update `README.md` and `ROADMAP.md`**
 
 - README "Current Features": add per-image pane styles with `InputImage::style` and `--pane-style`.
 - README "Decoration": add a short per-image override paragraph and one CLI line.
 - README "Status": say the workspace is at `0.4.0`.
 - ROADMAP: tick `Per-image style overrides (new input shape; breaking change)`.
 
-- [ ] **Step 6: Update crate READMEs**
+- [x] **Step 6: Update crate READMEs**
 
 - `crates/stitch-core/README.md`: the example constructs `InputImage` directly; switch to `InputImage::new(w, h, pixels)` and add one sentence about `style`.
 - `crates/stitch-cli/README.md`: add a short per-pane example.
 - `crates/stitch-wasm/README.md`: delete the stale sentence saying the web example "arrives in the next roadmap task"; add `set_pane_style` to the JS example.
 
-- [ ] **Step 7: Check for stale prose and broken links**
+- [x] **Step 7: Check for stale prose and broken links**
 
 ```bash
 rg -n "arrives in the next|not implemented yet|UnsupportedLayout" README.md ROADMAP.md docs crates/*/README.md
@@ -803,7 +806,7 @@ rg -n "arrives in the next|not implemented yet|UnsupportedLayout" README.md ROAD
 
 Expected: no matches.
 
-- [ ] **Step 8: Verify and commit**
+- [x] **Step 8: Verify and commit**
 
 ```bash
 cargo test --workspace
@@ -827,16 +830,16 @@ git commit -m "docs: document per-image styles and 0.4.0"
 **Interfaces:**
 - Produces: workspace version `0.4.0`, annotated tag `v0.4.0`.
 
-- [ ] **Step 1: Bump the workspace version**
+- [x] **Step 1: Bump the workspace version**
 
 In root `Cargo.toml`, set `version = "0.4.0"` under `[workspace.package]`. In `crates/stitch-cli/Cargo.toml` and `crates/stitch-wasm/Cargo.toml`, set the `stitch-core` dependency to `version = "0.4.0"`.
 
-- [ ] **Step 2: Refresh the lockfile**
+- [x] **Step 2: Refresh the lockfile**
 
 Run: `cargo check --workspace`
 Expected: success; `Cargo.lock` now lists `stitch-core`, `stitch-cli`, `stitch-wasm` at `0.4.0`.
 
-- [ ] **Step 3: Write `CHANGELOG.md`**
+- [x] **Step 3: Write `CHANGELOG.md`**
 
 Use this structure and content:
 
@@ -867,7 +870,7 @@ First tagged release; the 0.1–0.4 milestones were developed before this tag.
 - Dead `options` re-export shim and `ComposeError::UnsupportedLayout` removed.
 ```
 
-- [ ] **Step 4: Final full verification**
+- [x] **Step 4: Final full verification**
 
 ```bash
 cargo fmt --all -- --check
@@ -878,14 +881,14 @@ cargo check -p stitch-wasm --target wasm32-unknown-unknown
 
 Expected: all PASS, zero warnings.
 
-- [ ] **Step 5: Commit the release**
+- [x] **Step 5: Commit the release**
 
 ```bash
 git add Cargo.toml Cargo.lock crates/stitch-cli/Cargo.toml crates/stitch-wasm/Cargo.toml CHANGELOG.md README.md
 git commit -m "chore(release): v0.4.0"
 ```
 
-- [ ] **Step 6: Merge to main and tag**
+- [x] **Step 6: Merge to main and tag**
 
 ```bash
 git switch main
@@ -897,6 +900,6 @@ git push origin v0.4.0
 
 Expected: fast-forward merge, tag created and pushed; CI starts on `main`.
 
-- [ ] **Step 7: Report**
+- [x] **Step 7: Report**
 
 Print `git log --oneline -6`, `git tag --points-at HEAD`, and the final test counts. The release is ready for the user to test.

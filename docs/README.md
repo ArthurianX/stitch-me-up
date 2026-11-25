@@ -9,7 +9,7 @@
 - [WASM reference](wasm.md) — the `Composer` JavaScript API, error behavior, and the
   build/serve workflow for the web example.
 - [Design notes and plans](superpowers/) — the 0.4 per-image style design and the
-  implementation plan that shipped it.
+  implementation plan that shipped it, plus the release-hygiene plan for v0.4.2.
 
 ## Source of truth
 
