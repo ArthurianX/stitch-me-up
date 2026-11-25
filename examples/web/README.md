@@ -46,7 +46,7 @@ Open <http://localhost:8080/>.
 The pure logic in `lib.js` is covered by `node --test`:
 
 ```bash
-node --test "examples/web/tests/**/*.test.js"
+node --test examples/web/tests/*.test.js
 ```
 
 ## Generated files

@@ -21,10 +21,9 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
   items: [], // {id, file, name, url, width, height}
-  generation: 0,
+  changeToken: 0,
   busy: false,
   lastUrl: null,
-  lastBlob: null,
   composerReady: false,
 };
 
@@ -52,6 +51,10 @@ function setBusy(busy) {
   $("busy").hidden = !busy;
 }
 
+function clearBusyIfCurrent(token) {
+  if (token === state.changeToken) setBusy(false);
+}
+
 function emptyMessage() {
   return document.querySelector(".preview-empty");
 }
@@ -61,7 +64,6 @@ function clearPreview() {
     URL.revokeObjectURL(state.lastUrl);
     state.lastUrl = null;
   }
-  state.lastBlob = null;
   const preview = $("preview");
   preview.hidden = true;
   preview.removeAttribute("src");
@@ -214,6 +216,7 @@ async function addFiles(fileList) {
 }
 
 function schedule() {
+  state.changeToken++;
   if (debounceTimer !== null) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
@@ -222,11 +225,18 @@ function schedule() {
 }
 
 async function compose() {
-  const generation = ++state.generation;
+  const token = state.changeToken;
+
+  if (!state.composerReady) {
+    showStatus("Loading WebAssembly…");
+    clearBusyIfCurrent(token);
+    return;
+  }
 
   if (state.items.length === 0) {
     clearPreview();
     showStatus("Add images to start.");
+    clearBusyIfCurrent(token);
     return;
   }
 
@@ -235,6 +245,7 @@ async function compose() {
   const validation = isLayoutValid(layout, state.items.length, columns);
   if (!validation.ok) {
     showStatus(validation.message);
+    clearBusyIfCurrent(token);
     return;
   }
 
@@ -243,6 +254,8 @@ async function compose() {
 
   try {
     const buffers = await Promise.all(state.items.map((item) => item.file.arrayBuffer()));
+    if (token !== state.changeToken) return;
+
     const composer = new Composer();
     composer.set_layout(layout, columns);
     if (layout === "grid") {
@@ -266,15 +279,14 @@ async function compose() {
     }
 
     const png = composer.compose(buffers.map((b) => new Uint8Array(b)));
-    if (generation !== state.generation) return;
+    if (token !== state.changeToken) return;
 
     if (state.lastUrl) URL.revokeObjectURL(state.lastUrl);
     const blob = new Blob([png], { type: "image/png" });
-    state.lastBlob = blob;
     state.lastUrl = URL.createObjectURL(blob);
 
     const bitmap = await createImageBitmap(blob);
-    if (generation !== state.generation) return;
+    if (token !== state.changeToken) return;
 
     const preview = $("preview");
     preview.src = state.lastUrl;
@@ -291,10 +303,10 @@ async function compose() {
     const warning = totalWarning(totalPixels(state.items));
     showStatus(warning ?? "");
   } catch (error) {
-    if (generation !== state.generation) return;
+    if (token !== state.changeToken) return;
     showError(`Could not compose: ${error.message}`);
   } finally {
-    if (generation === state.generation) setBusy(false);
+    clearBusyIfCurrent(token);
   }
 }
 
@@ -330,11 +342,12 @@ async function loadVersion() {
   }
 }
 
-async function initWasm() {
+async function startWasm() {
   try {
     await initWasm();
     state.composerReady = true;
     showStatus("Ready.");
+    if (state.items.length > 0) schedule();
   } catch (error) {
     state.composerReady = false;
     showStatus("WebAssembly module failed to load.");
@@ -358,12 +371,9 @@ function wire() {
     event.stopPropagation();
     $("files").click();
   });
-  drop.addEventListener("click", () => $("files").click());
-  drop.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      $("files").click();
-    }
+  drop.addEventListener("click", (event) => {
+    if (event.target === $("files")) return;
+    $("files").click();
   });
   drop.addEventListener("dragover", (event) => {
     event.preventDefault();
@@ -373,10 +383,7 @@ function wire() {
   drop.addEventListener("drop", (event) => {
     event.preventDefault();
     drop.classList.remove("drag-over");
-    const files = Array.from(event.dataTransfer.files).filter(
-      (f) => f.type === "image/png" || f.type === "image/jpeg"
-    );
-    if (files.length > 0) addFiles(files);
+    addFiles(event.dataTransfer.files);
   });
 
   document.querySelectorAll("input, select").forEach((el) => {
@@ -394,8 +401,8 @@ async function main() {
   wire();
   setLayoutControls();
   renderThumbs();
-  await loadVersion();
-  await initWasm();
+  loadVersion();
+  await startWasm();
 }
 
 main();

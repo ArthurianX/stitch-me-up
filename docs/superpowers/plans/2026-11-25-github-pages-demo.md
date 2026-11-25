@@ -73,7 +73,7 @@ producing `stitch-me-up-YYYYMMDD-HHMMSS.png` from a fixed `Date`.
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `node --test examples/web/tests`
+Run: `node --test examples/web/tests/*.test.js`
 Expected: FAIL, `Cannot find module .../lib.js` (or missing exports).
 
 - [ ] **Step 4: Implement `lib.js`**
@@ -87,7 +87,7 @@ new arrays and clamp out-of-range indices to a no-op copy.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `node --test examples/web/tests`
+Run: `node --test examples/web/tests/*.test.js`
 Expected: all tests pass.
 
 - [ ] **Step 6: Commit**
@@ -212,7 +212,7 @@ Triggers `push` on `main` and `workflow_dispatch`; `permissions: contents: read,
 write, id-token: write`; `concurrency: {group: pages, cancel-in-progress: true}`;
 `environment: github-pages`. Steps: checkout → `jetli/wasm-pack-action@v0.4.0` with
 `version: v0.13.1` → `wasm-pack build --target web --out-dir ../../examples/web/pkg`
-(working-directory `crates/stitch-wasm`) → `node --test examples/web/tests` → write
+(working-directory `crates/stitch-wasm`) → `node --test examples/web/tests/*.test.js` → write
 `examples/web/version.json` (`version` from workspace `Cargo.toml`, `commit` from
 `${GITHUB_SHA:0:7}`) → `actions/configure-pages@v5` →
 `actions/upload-pages-artifact@v3` (`path: examples/web`) → `actions/deploy-pages@v4`.
@@ -245,7 +245,7 @@ git commit -m "ci: build and deploy the wasm demo to GitHub Pages"
 - [ ] **Step 1: Rewrite `examples/web/README.md`**
 
 Lead with the live URL and “everything runs in your browser”. Keep local build/serve
-instructions, document `node --test examples/web/tests`, the generated `pkg/` and
+instructions, document `node --test examples/web/tests/*.test.js`, the generated `pkg/` and
 `version.json`, and that deploys come from `main` via `pages.yml`.
 
 - [ ] **Step 2: Update cross-references**
@@ -267,7 +267,7 @@ git commit -m "docs: document the live wasm demo and its deployment"
 
 - [ ] **Step 1: Full gates**
 
-`node --test examples/web/tests`; `cargo fmt --all -- --check`; `cargo clippy --workspace
+`node --test examples/web/tests/*.test.js`; `cargo fmt --all -- --check`; `cargo clippy --workspace
 --all-targets -- -D warnings`; `cargo test --workspace` (104); `cargo +1.88.0 test
 --workspace` (104). All must pass.
 
@@ -288,7 +288,7 @@ main`. Fetch the page HTML and confirm the control ids exist.
 
 ## Acceptance criteria
 
-- `node --test examples/web/tests` passes locally and in the `web` CI job.
+- `node --test examples/web/tests/*.test.js` passes locally and in the `web` CI job.
 - CI green on `main`; Pages run green and the live URL serves HTML, JS, CSS, wasm, and
   `version.json` for the deployed commit.
 - The page exposes every control in the spec, rejects non-PNG/JPEG, enforces the limits,

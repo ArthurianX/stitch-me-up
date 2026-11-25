@@ -117,7 +117,7 @@ examples/web/
 - Environment: `github-pages`.
 - Steps: checkout → `jetli/wasm-pack-action` with wasm-pack `v0.13.1` → build
   `--target web --out-dir examples/web/pkg` in `crates/stitch-wasm` → `node --test
-  examples/web/tests` → write `examples/web/version.json` from `Cargo.toml` and
+  examples/web/tests/*.test.js` → write `examples/web/version.json` from `Cargo.toml` and
   `GITHUB_SHA` → `actions/upload-pages-artifact` (path `examples/web`) →
   `actions/deploy-pages`.
 - Every push to `main` deploys; no path filter, because core changes alter output.
@@ -127,7 +127,7 @@ examples/web/
 
 ### Testing
 
-`node --test examples/web/tests` covers the pure logic in `lib.js`:
+`node --test examples/web/tests/*.test.js` covers the pure logic in `lib.js`:
 
 - limit and type validation (24 / 25 MP / 100 MP, warning threshold)
 - ordering (move up/down bounds, remove, stable order)

@@ -70,5 +70,10 @@ jobs:
         working-directory: crates/stitch-wasm
         run: wasm-pack build --target web --out-dir ../../examples/web/pkg
 
+      - name: Check JS syntax
+        run: |
+          node --check examples/web/app.js
+          node --check examples/web/lib.js
+
       - name: Run node tests
-        run: node --test "examples/web/tests/**/*.test.js"
+        run: node --test examples/web/tests/*.test.js
