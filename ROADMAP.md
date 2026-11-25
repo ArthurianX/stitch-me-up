@@ -49,10 +49,10 @@ Decision log:
 Decision log:
 
 - **"Published crate metadata" meant metadata only.** The `repository`, `readme`,
-  keywords, and categories fields are set in the manifests, but nothing is published to
+  keywords, and categories fields are set in the manifests, but nothing was published to
   crates.io: `stitch-core` and `stitch-wasm` are held by unrelated projects
-  (`mlb2251/stitch`, `LabOverWire/stitch-rs`), so distribution is blocked by the name
-  collision. A rename decision is deferred; distribution is source-only for now.
+  (`mlb2251/stitch`, `LabOverWire/stitch-rs`). The 0.5 rename (see below) resolved the
+  collision by publishing under new names.
 
 ## 0.4 — Layout expressiveness
 
@@ -70,6 +70,25 @@ Decision log:
 - **Column weights size tracks, they do not stretch images.** `unit` is the largest
   content-per-weight ratio, so every track stays at or above its natural width and
   slack becomes background. Empty weights keep auto sizing unchanged.
+
+## 0.5 — Distribution (done)
+
+- [x] Package rename: `stitch-core` → `stitch-me-up-core`, `stitch-cli` → `stitch-me-up`,
+      `stitch-wasm` → `stitch-me-up-wasm` (lib targets `stitch_core` / `stitch_wasm` unchanged)
+- [x] Prebuilt binaries (Linux x86_64, macOS aarch64, Windows x86_64) with `.sha256`
+      checksums, built by `release.yml` on tag push
+- [ ] First crates.io publish (`stitch-me-up-core`, `stitch-me-up-wasm`, `stitch-me-up`) —
+      manual, after the tag and release exist (Phase B)
+
+Decision log:
+
+- **Rename with lib names preserved.** Directory names and import paths stay
+  `crates/stitch-*` / `stitch_core` / `stitch_wasm`; only the package names change, so
+  `use stitch_core::…` and the generated `pkg/stitch_wasm.js` path are unaffected.
+- **Binaries from native runners.** Three native runners (no cross-compilation) build
+  the CLI with `--locked` on stable; archives contain the binary, README, and LICENSE.
+- **Publishing is manual.** `cargo publish --dry-run` first, then real publishes in
+  dependency order (core → wasm → CLI).
 
 ## Out of scope
 

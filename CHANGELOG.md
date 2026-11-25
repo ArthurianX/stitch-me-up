@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
+## 0.5.0 — 2026-11-25
+
+Distribution release: package rename, prebuilt binaries, and the first crates.io publish.
+No engine, CLI, or WASM behavior change.
+
+### Changed (breaking)
+
+- Package renames: `stitch-core` → `stitch-me-up-core`, `stitch-cli` → `stitch-me-up`,
+  `stitch-wasm` → `stitch-me-up-wasm`. Lib targets are unchanged (`stitch_core`,
+  `stitch_wasm`), so `use stitch_core::…` and the generated `pkg/stitch_wasm.js` path
+  are unaffected. Directory names stay `crates/stitch-*`.
+
+### Added
+
+- Prebuilt binaries for Linux (x86_64), macOS (aarch64), and Windows (x86_64), attached
+  to GitHub Releases with `.sha256` checksums, built by `release.yml` on tag push.
+- `release.yml` workflow: native builds on stable with `--locked`, `.tar.gz`/`.zip`
+  archives containing the binary, README, and LICENSE.
+
+### Fixed
+
+- Clippy 1.100 `chunks_exact_to_as_chunks` lint in RGBA pixel iteration (no behavior
+  change).
+- Manifest warnings removed: `homepage` dropped from the workspace and every crate,
+  `readme` dropped from `[workspace.package]` (each crate sets its own), and `js-sys`
+  moved to wasm32-only dependencies.
+
 ## 0.4.2 — 2026-11-25
 
 Release hygiene; no engine, CLI, or WASM behavior change.
