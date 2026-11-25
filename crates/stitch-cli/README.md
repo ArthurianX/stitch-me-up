@@ -1,6 +1,6 @@
 # 🩹 `stitch-me-up`
 
-Command-line wrapper for the 🩹 `stitch-me-up` image composition engine.
+Command-line wrapper for the 🩹 `stitch-me-up-core` image composition engine.
 
 ## Example
 
