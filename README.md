@@ -132,6 +132,10 @@ stitch-me-up combine --layout grid --columns 2 --spacing 8 --spacing-x 20 --spac
 
 ## Development
 
+Requires Rust 1.88 or newer (the workspace MSRV; the locked dependency graph needs
+`image 0.25.10` → 1.88, `clap` → 1.85, `wasm-bindgen` → 1.81). CI enforces this with a
+dedicated `msrv` job pinned to 1.88.0.
+
 Once Rust is installed locally:
 
 ```bash
