@@ -104,7 +104,8 @@ fn draw_divider(
 }
 
 fn fill_background(pixels: &mut [u8], background: [u8; 4]) {
-    for chunk in pixels.chunks_exact_mut(4) {
+    let (chunks, _) = pixels.as_chunks_mut::<4>();
+    for chunk in chunks {
         chunk.copy_from_slice(&background);
     }
 }
@@ -181,13 +182,15 @@ fn blit_image(
             .ok_or(ComposeError::CoordinateOverflow)?;
 
         if !decorated {
-            if source.chunks_exact(4).all(|pixel| pixel[3] == 255) {
+            let (source_pixels, _) = source.as_chunks::<4>();
+            if source_pixels.iter().all(|pixel| pixel[3] == 255) {
                 destination.copy_from_slice(source);
                 continue;
             }
 
+            let (destination_pixels, _) = destination.as_chunks_mut::<4>();
             for (destination_pixel, source_pixel) in
-                destination.chunks_exact_mut(4).zip(source.chunks_exact(4))
+                destination_pixels.iter_mut().zip(source_pixels.iter())
             {
                 blend_pixel(destination_pixel, source_pixel);
             }
@@ -195,9 +198,11 @@ fn blit_image(
             continue;
         }
 
-        for (column, (destination_pixel, source_pixel)) in destination
-            .chunks_exact_mut(4)
-            .zip(source.chunks_exact(4))
+        let (destination_pixels, _) = destination.as_chunks_mut::<4>();
+        let (source_pixels, _) = source.as_chunks::<4>();
+        for (column, (destination_pixel, source_pixel)) in destination_pixels
+            .iter_mut()
+            .zip(source_pixels.iter())
             .enumerate()
         {
             let x = u32::try_from(column).map_err(|_| ComposeError::CoordinateOverflow)?;
@@ -206,7 +211,7 @@ fn blit_image(
                 continue;
             }
 
-            let source_pixel =
+            let source_pixel: &[u8] =
                 if in_frame_ring(x, row, placed.width, placed.height, radius, frame_width) {
                     &frame_pixel[..]
                 } else {
