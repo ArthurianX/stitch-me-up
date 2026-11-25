@@ -3,3 +3,4 @@
 .DS_Store
 .serena/
 examples/web/pkg/
+examples/web/version.json
