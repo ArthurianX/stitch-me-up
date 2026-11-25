@@ -126,3 +126,12 @@ export function downloadName(date) {
   const stamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
   return `stitch-me-up-${stamp}.png`;
 }
+
+// Returns null when the total is within the limit, otherwise a short message.
+export function totalLimit(total) {
+  if (!Number.isFinite(total) || total < 0) return null;
+  if (total > MAX_TOTAL_PIXELS) {
+    return `total input would exceed ${MAX_TOTAL_PIXELS.toLocaleString()} pixels (${total.toLocaleString()})`;
+  }
+  return null;
+}

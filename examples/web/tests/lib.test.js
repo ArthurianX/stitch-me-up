@@ -11,6 +11,7 @@ import {
   canAddFiles,
   totalPixels,
   totalWarning,
+  totalLimit,
   moveItem,
   moveUp,
   moveDown,
@@ -154,4 +155,11 @@ test("formatBytes renders human-readable sizes", () => {
 test("downloadName formats a fixed date", () => {
   const date = new Date(2026, 10, 25, 9, 5, 3);
   assert.equal(downloadName(date), "stitch-me-up-20261125-090503.png");
+});
+
+test("totalLimit rejects totals over 100 MP", () => {
+  assert.equal(totalLimit(100_000_000), null);
+  assert.equal(totalLimit(99_999_999), null);
+  const error = totalLimit(100_000_001);
+  assert.match(error, /100/);
 });
