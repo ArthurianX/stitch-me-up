@@ -3,6 +3,14 @@
 The `Composer` class exposes the `stitch-me-up-core` engine to JavaScript. Everything runs
 client-side: inputs are PNG/JPEG **bytes**, the output is always **PNG bytes**.
 
+## Live demo
+
+The web example is deployed to GitHub Pages at
+<https://arthurianx.github.io/stitch-me-up/>. The footer shows the engine version and
+deployed commit from `version.json`, which is written at deploy time (`{version, commit}`
+from the workspace `Cargo.toml` and `GITHUB_SHA`) and is gitignored. A missing file
+(local dev, `file://`) hides the footer version instead of erroring.
+
 ## Build and serve
 
 `wasm-pack` generates the JS glue; it is not installed in CI and not required for the
@@ -92,7 +100,8 @@ Compose errors:
 - Only PNG and JPEG inputs are decoded; the output format is always PNG.
 - `wasm-pack` is not part of CI, so the JS bindings are checked only by the wasm target
   compile; the browser behavior is verified manually via the web example.
-- The generated `pkg/` directory is local build output and is gitignored.
+- The generated `pkg/` directory and `version.json` are local build output and are
+  gitignored.
 
 See the [web example](../examples/web/README.md) for a complete UI and
 [API reference](api.md) for the underlying layout semantics.

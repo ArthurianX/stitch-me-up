@@ -135,8 +135,8 @@ stitch-me-up combine --layout grid --columns 2 --spacing 8 --spacing-x 20 --spac
 
 ## Examples
 
-- WebAssembly browser demo: [examples/web](examples/web/README.md) — compose images in
-  the page itself; requires `wasm-pack` to build its `pkg/` directory first.
+- Live WebAssembly demo: <https://arthurianx.github.io/stitch-me-up/> — compose images in
+  the browser; nothing is uploaded. Source: [examples/web](examples/web/README.md).
 - Command-line demo: [examples/cli](examples/cli/compose.sh) — a decorated grid in a
   few lines of bash, runnable from any directory in the repository.
 

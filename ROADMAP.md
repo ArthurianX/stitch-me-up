@@ -90,6 +90,13 @@ Decision log:
 - **Publishing is manual.** `cargo publish --dry-run` first, then real publishes in
   dependency order (core → wasm → CLI).
 
+## Public demo (done)
+
+- [x] `examples/web` rebuilt as a designed GitHub Pages demo: upload/drop, reorder,
+      live preview, download, layout-aware controls, node tests for the pure logic
+- [x] `pages.yml` deploys `examples/web` to GitHub Pages on every push to `main`
+- [x] `ci.yml` gains a non-deploying `web` job (wasm build + node tests)
+
 ## Out of scope
 
 - Panorama stitching, computer vision, and any AI features

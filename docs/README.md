@@ -9,7 +9,7 @@
 - [WASM reference](wasm.md) — the `Composer` JavaScript API, error behavior, and the
   build/serve workflow for the web example.
 - [Design notes and plans](superpowers/) — the 0.4 per-image style design and the
-  implementation plan that shipped it, plus the release-hygiene plan for v0.4.2 and the 0.5.0 release plan (package rename, prebuilt binaries, first publish).
+  implementation plan that shipped it, plus the release-hygiene plan for v0.4.2 and the 0.5.0 release plan (package rename, prebuilt binaries, first publish), and the GitHub Pages demo design and plan (live WASM demo, deployment, node tests).
 
 ## Source of truth
 
