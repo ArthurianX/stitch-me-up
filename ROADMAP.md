@@ -71,7 +71,7 @@ Decision log:
   content-per-weight ratio, so every track stays at or above its natural width and
   slack becomes background. Empty weights keep auto sizing unchanged.
 
-## 0.5 — Distribution (done)
+## 0.5 — Distribution
 
 - [x] Package rename: `stitch-core` → `stitch-me-up-core`, `stitch-cli` → `stitch-me-up`,
       `stitch-wasm` → `stitch-me-up-wasm` (lib targets `stitch_core` / `stitch_wasm` unchanged)
