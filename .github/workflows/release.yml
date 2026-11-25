@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: build and upload artifacts but do not publish to a release"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        shell: bash
+        run: cargo build --release --locked -p stitch-me-up
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          TARGET="${{ matrix.target }}"
+          PKG="stitch-me-up-${VERSION}-${TARGET}"
+          BIN="target/release/stitch-me-up"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            BIN="target/release/stitch-me-up.exe"
+          fi
+          mkdir -p "$PKG"
+          cp "$BIN" "$PKG/"
+          cp README.md LICENSE "$PKG/"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            powershell.exe -NoProfile -Command "Compress-Archive -Path '$PKG' -DestinationPath '$PKG.zip' -Force"
+            ARCHIVE="$PKG.zip"
+          else
+            tar -czf "$PKG.tar.gz" "$PKG"
+            ARCHIVE="$PKG.tar.gz"
+          fi
+          HASH=$(python3 -c "import hashlib; print(hashlib.sha256(open('$ARCHIVE','rb').read()).hexdigest())")
+          echo "$HASH  $(basename "$ARCHIVE")" > "$ARCHIVE.sha256"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stitch-me-up-${{ matrix.target }}
+          path: |
+            stitch-me-up-*.tar.gz
+            stitch-me-up-*.zip
+            stitch-me-up-*.sha256
+
+      - name: Upload to release
+        if: github.event_name == 'push' || inputs.dry_run == false
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Release $GITHUB_REF_NAME did not appear within 5 minutes" >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          gh release upload "$GITHUB_REF_NAME" "$ARCHIVE" "$ARCHIVE.sha256" --clobber
