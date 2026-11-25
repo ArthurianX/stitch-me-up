@@ -86,23 +86,23 @@ dependencies; no crate renames; no binary release artifacts; no push of `main` o
 
 ## Task 6 — Prepare 0.4.2
 
-- [ ] Bump the workspace version to `0.4.2` and the `stitch-core` path-dependency version
+- [x] Bump the workspace version to `0.4.2` and the `stitch-core` path-dependency version
       pins in `crates/stitch-cli/Cargo.toml` and `crates/stitch-wasm/Cargo.toml`.
-- [ ] Update `README.md` status line to `v0.4.2`.
-- [ ] Add a `## 0.4.2 — 2026-11-25` CHANGELOG section covering: MSRV correction to 1.88,
+- [x] Update `README.md` status line to `v0.4.2`.
+- [x] Add a `## 0.4.2 — 2026-11-25` CHANGELOG section covering: MSRV correction to 1.88,
       dependency bumps (clap 4.6.8, anyhow 1.0.104, thiserror 2.0.21), CI MSRV job, GitHub
       release backfill, crates.io status documentation, plan hygiene.
-- [ ] Refresh `Cargo.lock` (`cargo check --workspace`) and confirm it lists `0.4.2` for the
+- [x] Refresh `Cargo.lock` (`cargo check --workspace`) and confirm it lists `0.4.2` for the
       three workspace crates.
-- [ ] Full verification, then `chore(release): v0.4.2` commit, `git switch main`,
+- [x] Full verification, then `chore(release): v0.4.2` commit, `git switch main`,
       `git merge --ff-only release/0.4.2`, `git tag -a v0.4.2 -m "v0.4.2"`.
-- [ ] **Stop.** Do not push.
+- [x] **Stop.** Do not push.
 
 ## Task 7 — Branch cleanup
 
-- [ ] Delete only branches that are fully merged into `main` (`git branch --merged main`):
+- [x] Delete only branches that are fully merged into `main` (`git branch --merged main`):
       currently `release/0.4.0` and `te2-pr`. Use `git branch -d` (never `-D`).
-- [ ] Leave `verify-te2` in place; state its divergence in the report.
+- [x] Leave `verify-te2` in place; state its divergence in the report.
 
 ## Task 8 — Report
 
