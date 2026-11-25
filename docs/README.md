@@ -1,6 +1,6 @@
 # Documentation
 
-- [API reference](api.md) — the public surface of `stitch-core`: types, functions,
+- [API reference](api.md) — the public surface of `stitch-me-up-core` (lib `stitch_core`): types, functions,
   errors, and the behavior notes that decide pixel placement.
 - [CLI reference](cli.md) — every `stitch-me-up combine` flag, its default, accepted
   values, examples, and how errors are reported.
@@ -9,7 +9,7 @@
 - [WASM reference](wasm.md) — the `Composer` JavaScript API, error behavior, and the
   build/serve workflow for the web example.
 - [Design notes and plans](superpowers/) — the 0.4 per-image style design and the
-  implementation plan that shipped it, plus the release-hygiene plan for v0.4.2.
+  implementation plan that shipped it, plus the release-hygiene plan for v0.4.2 and the 0.5.0 release plan (package rename, prebuilt binaries, first publish).
 
 ## Source of truth
 

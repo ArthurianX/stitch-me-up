@@ -1,17 +1,19 @@
 [package]
-name = "stitch-core"
+name = "stitch-me-up-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 description = "Deterministic image composition engine: layout planning and rendering over RGBA buffers"
-documentation = "https://docs.rs/stitch-core"
+documentation = "https://docs.rs/stitch-me-up-core"
 repository.workspace = true
-homepage.workspace = true
 readme = "README.md"   # per-crate readme; workspace-level inheritance resolves against the workspace root
 keywords.workspace = true
 categories.workspace = true
+
+[lib]
+name = "stitch_core"
 
 [dependencies]
 image.workspace = true

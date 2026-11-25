@@ -6,7 +6,7 @@ This project is intentionally about composition, not panorama stitching or compu
 
 ## Status
 
-The repository contains a `v0.4.2` workspace:
+The repository contains a `v0.5.0` workspace:
 
 - a Cargo workspace
 - a pure Rust core crate for layout planning and rendering
@@ -18,14 +18,20 @@ The repository contains a `v0.4.2` workspace:
 
 ## Distribution
 
-Nothing is published to crates.io. The crate names are held by unrelated projects:
+The workspace publishes three crates to crates.io:
 
-- `stitch-core` — owned by `mlb2251/stitch`
-- `stitch-wasm` — owned by `LabOverWire/stitch-rs`
+- `stitch-me-up-core` — the pure engine (lib `stitch_core`)
+- `stitch-me-up` — the CLI (binary `stitch-me-up`)
+- `stitch-me-up-wasm` — the WebAssembly adapter (lib `stitch_wasm`)
 
-`stitch-cli` is unclaimed on crates.io, but the workspace is not published as a whole.
-Distribution is source-only: build from source or use a git dependency. A rename decision
-is deferred; see ROADMAP.md.
+Install the CLI with:
+
+```bash
+cargo install stitch-me-up
+```
+
+Prebuilt binaries for Linux (x86_64), macOS (aarch64), and Windows (x86_64) are attached
+to each GitHub Release, with `.sha256` checksums alongside the archives.
 
 ## Workspace
 

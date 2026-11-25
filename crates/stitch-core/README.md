@@ -1,4 +1,4 @@
-# 🩹 `stitch-core`
+# 🩹 `stitch-me-up-core`
 
 Deterministic image composition engine: layout planning and rendering over RGBA buffers.
 
@@ -7,7 +7,7 @@ Deterministic image composition engine: layout planning and rendering over RGBA 
 The engine takes decoded RGBA8 pixel buffers — 4 bytes per pixel, row-major — and hands
 back a `ComposedImage` of the same shape. No filesystem, no network, no format magic in
 the hot path: PNG/JPEG decoding and encoding are thin boundary helpers, so the same core
-serves the CLI (`stitch-cli`), the browser (`stitch-wasm`), and any future backend or
+serves the CLI (`stitch-me-up`), the browser (`stitch-me-up-wasm`), and any future backend or
 mobile adapter without change. All arithmetic is integer and overflow-checked.
 
 ## Example
@@ -44,7 +44,7 @@ reference](../../docs/api.md) and the [layout cookbook](../../docs/layouts.md).
 
 ## Engine and adapters
 
-This crate is the engine. The adapters stay thin: [`stitch-cli`](../stitch-cli) does file
-I/O and argument parsing, [`stitch-wasm`](../stitch-wasm) exposes the same composition to
+This crate is the engine. The adapters stay thin: [`stitch-me-up`](../stitch-cli) does file
+I/O and argument parsing, [`stitch-me-up-wasm`](../stitch-wasm) exposes the same composition to
 JavaScript. Buffered decode/encode/composition helpers (`compose_to_png`,
 `load_image_from_bytes`, `encode_png`) live here, not in the adapters.

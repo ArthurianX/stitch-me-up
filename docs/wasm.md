@@ -1,6 +1,6 @@
-# WASM Reference (`stitch-wasm`)
+# WASM Reference (`stitch-me-up-wasm`, lib `stitch_wasm`)
 
-The `Composer` class exposes the `stitch-core` engine to JavaScript. Everything runs
+The `Composer` class exposes the `stitch-me-up-core` engine to JavaScript. Everything runs
 client-side: inputs are PNG/JPEG **bytes**, the output is always **PNG bytes**.
 
 ## Build and serve
@@ -16,7 +16,7 @@ python3 -m http.server 8080 --directory examples/web
 ```
 
 Open `http://localhost:8080/` (ES modules do not load from `file://`). CI only runs
-`cargo check -p stitch-wasm --target wasm32-unknown-unknown`; the generated `pkg/`
+`cargo check -p stitch-me-up-wasm --target wasm32-unknown-unknown`; the generated `pkg/`
 directory is gitignored.
 
 ## API

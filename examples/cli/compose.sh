@@ -6,7 +6,7 @@ usage() {
 Usage: examples/cli/compose.sh [options] <input image> <input image> [more images...]
 
 Combines 2 or more PNG or JPEG images into a single decorated grid PNG using the
-stitch-cli `combine` command.
+stitch-me-up `combine` command.
 
 Options:
   -h, --help   Show this message
@@ -45,7 +45,7 @@ if [ -z "$root" ]; then
   root="$(cd "$(dirname "$0")/../.." && pwd)"
 fi
 
-cargo run --quiet --manifest-path "$root/Cargo.toml" -p stitch-cli -- combine \
+cargo run --quiet --manifest-path "$root/Cargo.toml" -p stitch-me-up -- combine \
   --layout "$LAYOUT" \
   --output "$OUT" \
   --columns 2 \

@@ -1,4 +1,4 @@
-# Core API Reference (`stitch-core`)
+# Core API Reference (`stitch-me-up-core`, lib `stitch_core`)
 
 Everything below is re-exported at the crate root (`use stitch_core::…`). The core
 operates on decoded RGBA8 buffers: 4 bytes per pixel, row-major, `width * height * 4`

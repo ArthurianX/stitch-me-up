@@ -1,4 +1,4 @@
-# 🩹 `stitch-cli`
+# 🩹 `stitch-me-up`
 
 Command-line wrapper for the 🩹 `stitch-me-up` image composition engine.
 
@@ -51,5 +51,5 @@ radius per pane only; `frame-width=0` disables the frame.
 
 ## Notes
 
-- The CLI expects decoded-image support from the sibling `stitch-core` crate.
+- The CLI expects decoded-image support from the sibling `stitch-me-up-core` crate.
 - Output is always written as PNG in this first pass.

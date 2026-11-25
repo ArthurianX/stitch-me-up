@@ -1,9 +1,9 @@
-# stitch-wasm
+# stitch-me-up-wasm
 
 WebAssembly adapter for the 🩹 Stitch Me Up image composition engine. It exposes the
-`stitch-core` engine to JavaScript through a single `Composer` object: configure it with
+`stitch-me-up-core` engine to JavaScript through a single `Composer` object: configure it with
 setters, hand it encoded images, get PNG bytes back. All decode, compose and encode work
-lives in `stitch-core`; this crate only bridges types.
+lives in `stitch-me-up-core`; this crate only bridges types.
 
 ## Build
 
@@ -18,7 +18,7 @@ To check the crate compiles for the web target without wasm-pack:
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cargo check -p stitch-wasm --target wasm32-unknown-unknown
+cargo check -p stitch-me-up-wasm --target wasm32-unknown-unknown
 ```
 
 ## Usage

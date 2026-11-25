@@ -1,3 +1,3 @@
 fn main() -> anyhow::Result<()> {
-    stitch_cli::run()
+    stitch_me_up::run()
 }

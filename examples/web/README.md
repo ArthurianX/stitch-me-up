@@ -1,7 +1,7 @@
 # Web example
 
 A small browser UI that composes PNG/JPEG images entirely client-side, using the
-[`stitch-wasm`](../../crates/stitch-wasm) adapter. No CDN, no framework, no build step
+[`stitch-me-up-wasm`](../../crates/stitch-wasm) adapter. No CDN, no framework, no build step
 for the page itself — but the WebAssembly module must be generated first.
 
 ## Prerequisites
