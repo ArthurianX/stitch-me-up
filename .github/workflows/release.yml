@@ -57,7 +57,16 @@ jobs:
           cp "$BIN" "$PKG/"
           cp README.md LICENSE "$PKG/"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            powershell.exe -NoProfile -Command "Compress-Archive -Path '$PKG' -DestinationPath '$PKG.zip' -Force"
+            # bsdtar (Git Bash) emits forward-slash zip entries; fall back to 7-Zip if it
+            # does not.
+            tar -a -c -f "$PKG.zip" "$PKG"
+            if ! python3 -c 'import zipfile,sys; names=zipfile.ZipFile(sys.argv[1]).namelist(); sys.exit(0 if all("\\" not in n for n in names) else 1)' "$PKG.zip"; then
+              7Z="7z"
+              if ! command -v 7z >/dev/null 2>&1; then
+                7Z="/c/Program Files/7-Zip/7z.exe"
+              fi
+              "$7Z" a -tzip "$PKG.zip" "$PKG"
+            fi
             ARCHIVE="$PKG.zip"
           else
             tar -czf "$PKG.tar.gz" "$PKG"
