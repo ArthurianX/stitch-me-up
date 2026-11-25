@@ -77,7 +77,7 @@ Decision log:
       `stitch-wasm` → `stitch-me-up-wasm` (lib targets `stitch_core` / `stitch_wasm` unchanged)
 - [x] Prebuilt binaries (Linux x86_64, macOS aarch64, Windows x86_64) with `.sha256`
       checksums, built by `release.yml` on tag push
-- [ ] First crates.io publish (`stitch-me-up-core`, `stitch-me-up-wasm`, `stitch-me-up`) —
+- [x] First crates.io publish (`stitch-me-up-core`, `stitch-me-up-wasm`, `stitch-me-up`) —
       manual, after the tag and release exist (Phase B)
 
 Decision log:
