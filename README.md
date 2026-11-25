@@ -16,6 +16,17 @@ The repository contains a `v0.4.1` workspace:
 
 `Grid` is implemented with row-major placement and auto-sized column and row tracks. `BeforeAfter` takes exactly two images, scales both to their shared tallest height while preserving aspect ratio, and places them side by side, ignoring `resize_mode`.
 
+## Distribution
+
+Nothing is published to crates.io. The crate names are held by unrelated projects:
+
+- `stitch-core` — owned by `mlb2251/stitch`
+- `stitch-wasm` — owned by `LabOverWire/stitch-rs`
+
+`stitch-cli` is unclaimed on crates.io, but the workspace is not published as a whole.
+Distribution is source-only: build from source or use a git dependency. A rename decision
+is deferred; see ROADMAP.md.
+
 ## Workspace
 
 ```text

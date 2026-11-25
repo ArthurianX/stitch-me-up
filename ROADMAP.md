@@ -46,6 +46,14 @@ Decision log:
 - [x] `docs/` with the API reference and a layout cookbook
 - [x] Published crate metadata (`repository`, `readme`, keywords, categories)
 
+Decision log:
+
+- **"Published crate metadata" meant metadata only.** The `repository`, `readme`,
+  keywords, and categories fields are set in the manifests, but nothing is published to
+  crates.io: `stitch-core` and `stitch-wasm` are held by unrelated projects
+  (`mlb2251/stitch`, `LabOverWire/stitch-rs`), so distribution is blocked by the name
+  collision. A rename decision is deferred; distribution is source-only for now.
+
 ## 0.4 — Layout expressiveness
 
 - [x] Per-axis spacing (`Spacing { x, y }`, with `--spacing-x` / `--spacing-y`)
