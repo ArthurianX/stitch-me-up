@@ -1,7 +1,5 @@
 # Per-image Pane Styles + 0.4.0 Release Implementation Plan
-
 > **Status: executed** — shipped in v0.4.0, review fixes in v0.4.1. Boxes ticked retrospectively.
-
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
