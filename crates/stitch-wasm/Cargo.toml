@@ -22,3 +22,9 @@ wasm-bindgen.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys.workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+# The wasm-opt bundled with wasm-pack (v0.13.1 and v0.15.1) cannot validate the
+# bulk-memory operations emitted by current Rust toolchains, so optimization is
+# disabled. The wasm binary is still built and packaged normally.
+wasm-opt = false
