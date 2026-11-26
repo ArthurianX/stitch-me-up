@@ -27,7 +27,27 @@ pub fn load_image_from_bytes(bytes: &[u8]) -> Result<InputImage, ComposeError> {
     ))
 }
 
+fn validate_output_buffer(image: &ComposedImage) -> Result<(), ComposeError> {
+    let expected = u64::from(image.width)
+        .checked_mul(u64::from(image.height))
+        .and_then(|pixels| pixels.checked_mul(4))
+        .and_then(|bytes| usize::try_from(bytes).ok())
+        .ok_or(ComposeError::DimensionOverflow)?;
+    let actual = image.pixels.len();
+    if expected != actual {
+        return Err(ComposeError::InvalidOutputBuffer {
+            width: image.width,
+            height: image.height,
+            expected,
+            actual,
+        });
+    }
+    Ok(())
+}
+
 pub fn encode_png(image: &ComposedImage) -> Result<Vec<u8>, ComposeError> {
+    validate_output_buffer(image)?;
+
     let mut buffer = Vec::new();
     image::codecs::png::PngEncoder::new(&mut buffer).write_image(
         &image.pixels,
@@ -40,6 +60,8 @@ pub fn encode_png(image: &ComposedImage) -> Result<Vec<u8>, ComposeError> {
 }
 
 pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError> {
+    validate_output_buffer(image)?;
+
     image::save_buffer_with_format(
         path,
         &image.pixels,

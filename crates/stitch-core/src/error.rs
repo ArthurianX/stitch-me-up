@@ -28,6 +28,13 @@ pub enum ComposeError {
     DimensionOverflow,
     #[error("output coordinates overflowed during rendering")]
     CoordinateOverflow,
+    #[error("output image {width}x{height} has invalid buffer length: expected {expected}, got {actual}")]
+    InvalidOutputBuffer {
+        width: u32,
+        height: u32,
+        expected: usize,
+        actual: usize,
+    },
     #[error("image I/O error: {0}")]
     ImageIo(#[from] image::ImageError),
 }

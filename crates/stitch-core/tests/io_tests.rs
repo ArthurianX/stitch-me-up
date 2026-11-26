@@ -178,3 +178,103 @@ fn loaders_leave_style_unset() {
 
     let _ = fs::remove_file(path);
 }
+
+#[test]
+fn encode_png_rejects_undersized_buffer() {
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![],
+    };
+
+    let error = encode_png(&image).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidOutputBuffer {
+            width: 1,
+            height: 1,
+            expected: 4,
+            actual: 0,
+        }
+    ));
+    assert_eq!(
+        error.to_string(),
+        "output image 1x1 has invalid buffer length: expected 4, got 0"
+    );
+}
+
+#[test]
+fn encode_png_rejects_wrong_length_buffer() {
+    let image = ComposedImage {
+        width: 2,
+        height: 1,
+        pixels: vec![255, 0, 0, 255],
+    };
+
+    let error = encode_png(&image).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidOutputBuffer {
+            width: 2,
+            height: 1,
+            expected: 8,
+            actual: 4,
+        }
+    ));
+}
+
+#[test]
+fn save_png_rejects_undersized_buffer_and_writes_nothing() {
+    let path = temp_path("undersized.png");
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![],
+    };
+
+    let error = save_png(&path, &image).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidOutputBuffer {
+            width: 1,
+            height: 1,
+            expected: 4,
+            actual: 0,
+        }
+    ));
+    assert!(!path.exists(), "no file should be written");
+}
+
+#[test]
+fn save_png_rejects_wrong_length_buffer_and_writes_nothing() {
+    let path = temp_path("wrong-length.png");
+    let image = ComposedImage {
+        width: 2,
+        height: 1,
+        pixels: vec![255, 0, 0, 255],
+    };
+
+    let error = save_png(&path, &image).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidOutputBuffer {
+            width: 2,
+            height: 1,
+            expected: 8,
+            actual: 4,
+        }
+    ));
+    assert!(!path.exists(), "no file should be written");
+}
+
+#[test]
+fn encode_png_still_encodes_valid_1x1() {
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![255, 0, 0, 255],
+    };
+
+    let encoded = encode_png(&image).expect("encode valid 1x1");
+    assert!(encoded.starts_with(b"\x89PNG"));
+}
