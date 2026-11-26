@@ -21,7 +21,7 @@ async function waitPreview(page) {
 
 test.describe("web demo", () => {
   test("loads and composes two images", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await waitReady(page);
 
     await upload(page, [fixture("a.png"), fixture("b.png")]);
@@ -35,7 +35,7 @@ test.describe("web demo", () => {
   });
 
   test("layout switches recompose", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await waitReady(page);
     await upload(page, [fixture("a.png"), fixture("b.png")]);
     await waitPreview(page);
@@ -56,7 +56,7 @@ test.describe("web demo", () => {
   });
 
   test("before-after rejects a third image", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await waitReady(page);
     await upload(page, [fixture("a.png"), fixture("b.png")]);
     await waitPreview(page);
@@ -82,7 +82,7 @@ test.describe("web demo", () => {
       };
     });
 
-    await page.goto("/");
+    await page.goto("./");
     await waitReady(page);
     await upload(page, [fixture("a.png"), fixture("b.png")]);
     await waitPreview(page);
@@ -108,7 +108,7 @@ test.describe("web demo", () => {
   });
 
   test("upload notices survive a successful compose", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("./");
     await waitReady(page);
 
     await upload(page, [
@@ -130,7 +130,7 @@ test.describe("web demo", () => {
 
   test("missing wasm module shows guidance", async ({ page }) => {
     await page.route("**/pkg/stitch_wasm.js", (route) => route.abort());
-    await page.goto("/");
+    await page.goto("./");
 
     await expect(page.locator("#error")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("#error")).toContainText(/build the module|failed to load/i);
@@ -138,7 +138,7 @@ test.describe("web demo", () => {
 
   test("drop is refused after init failure", async ({ page }) => {
     await page.route("**/pkg/stitch_wasm_bg.wasm", (route) => route.abort());
-    await page.goto("/");
+    await page.goto("./");
 
     await expect(page.locator("#error")).toBeVisible({ timeout: 15_000 });
 
