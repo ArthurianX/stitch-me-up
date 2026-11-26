@@ -35,6 +35,8 @@ pub enum ComposeError {
         expected: usize,
         actual: usize,
     },
+    #[error("jpeg quality {quality} is outside 1..=100")]
+    InvalidJpegQuality { quality: u8 },
     #[error("image I/O error: {0}")]
     ImageIo(#[from] image::ImageError),
 }

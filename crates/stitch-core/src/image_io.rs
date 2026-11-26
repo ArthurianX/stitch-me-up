@@ -80,3 +80,36 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError> 
 
     Ok(())
 }
+
+pub fn encode_jpeg(image: &ComposedImage, quality: u8) -> Result<Vec<u8>, ComposeError> {
+    if !(1..=100).contains(&quality) {
+        return Err(ComposeError::InvalidJpegQuality { quality });
+    }
+    validate_output_buffer(image)?;
+
+    let mut rgb = vec![0u8; image.width as usize * image.height as usize * 3];
+    for (i, px) in image.pixels.as_chunks::<4>().0.iter().enumerate() {
+        let a = px[3] as u32;
+        let inv = 255 - a;
+        for (c, ch) in px[..3].iter().enumerate() {
+            let v = (*ch as u32 * a + 255 * inv + 127) / 255;
+            rgb[i * 3 + c] = v as u8;
+        }
+    }
+
+    let mut buffer = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, quality).write_image(
+        &rgb,
+        image.width,
+        image.height,
+        image::ExtendedColorType::Rgb8,
+    )?;
+
+    Ok(buffer)
+}
+
+pub fn save_jpeg(path: &Path, image: &ComposedImage, quality: u8) -> Result<(), ComposeError> {
+    let bytes = encode_jpeg(image, quality)?;
+    std::fs::write(path, bytes).map_err(ImageError::IoError)?;
+    Ok(())
+}

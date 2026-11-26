@@ -8,9 +8,9 @@ use image::ImageEncoder;
 
 use helpers::solid_image;
 use stitch_core::{
-    compose_to_png, encode_png, load_image_from_bytes, load_image_from_path, save_png, Alignment,
-    ComposeError, ComposeOptions, ComposedImage, HexColorError, InputImage, Insets, LayoutKind,
-    PaneStyle, ResizeMode, RgbaColor, Spacing,
+    compose_to_png, encode_jpeg, encode_png, load_image_from_bytes, load_image_from_path,
+    save_jpeg, save_png, Alignment, ComposeError, ComposeOptions, ComposedImage, HexColorError,
+    InputImage, Insets, LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
 };
 
 fn temp_path(name: &str) -> PathBuf {
@@ -379,6 +379,108 @@ fn untagged_jpeg_keeps_dimensions() {
     let loaded = load_image_from_path(&path).expect("load path");
     assert_eq!(loaded.width, 2);
     assert_eq!(loaded.height, 3);
+
+    let _ = fs::remove_file(path);
+}
+
+#[test]
+fn encode_jpeg_rejects_quality_zero_and_101() {
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![255, 0, 0, 255],
+    };
+
+    let error = encode_jpeg(&image, 0).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidJpegQuality { quality: 0 }
+    ));
+    assert_eq!(error.to_string(), "jpeg quality 0 is outside 1..=100");
+
+    let error = encode_jpeg(&image, 101).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidJpegQuality { quality: 101 }
+    ));
+    assert_eq!(error.to_string(), "jpeg quality 101 is outside 1..=100");
+}
+
+#[test]
+fn encode_jpeg_roundtrips_dimensions() {
+    let image = ComposedImage {
+        width: 3,
+        height: 2,
+        pixels: vec![200, 100, 50, 255]
+            .into_iter()
+            .cycle()
+            .take(3 * 2 * 4)
+            .collect(),
+    };
+
+    let bytes = encode_jpeg(&image, 90).expect("encode jpeg");
+    assert_eq!(&bytes[..2], &[0xFF, 0xD8]);
+
+    let loaded = load_image_from_bytes(&bytes).expect("load jpeg");
+    assert_eq!(loaded.width, 3);
+    assert_eq!(loaded.height, 2);
+}
+
+#[test]
+fn encode_jpeg_flattens_transparency_onto_white() {
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![0, 0, 0, 0],
+    };
+
+    let bytes = encode_jpeg(&image, 90).expect("encode jpeg");
+    let loaded = load_image_from_bytes(&bytes).expect("load jpeg");
+    for ch in loaded.pixels.as_chunks::<4>().0 {
+        assert!(ch[0] >= 250, "r={}", ch[0]);
+        assert!(ch[1] >= 250, "g={}", ch[1]);
+        assert!(ch[2] >= 250, "b={}", ch[2]);
+    }
+}
+
+#[test]
+fn encode_jpeg_rejects_invalid_buffer() {
+    let image = ComposedImage {
+        width: 1,
+        height: 1,
+        pixels: vec![],
+    };
+
+    let error = encode_jpeg(&image, 90).unwrap_err();
+    assert!(matches!(
+        error,
+        ComposeError::InvalidOutputBuffer {
+            width: 1,
+            height: 1,
+            expected: 4,
+            actual: 0,
+        }
+    ));
+}
+
+#[test]
+fn save_jpeg_writes_decodable_file() {
+    let path = temp_path("roundtrip.jpg");
+    let image = ComposedImage {
+        width: 2,
+        height: 2,
+        pixels: vec![
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
+        ],
+    };
+
+    save_jpeg(&path, &image, 80).expect("save jpeg");
+    let bytes = fs::read(&path).expect("read jpeg");
+    assert_eq!(&bytes[..2], &[0xFF, 0xD8]);
+
+    let loaded = load_image_from_path(&path).expect("load jpeg");
+    assert_eq!(loaded.width, 2);
+    assert_eq!(loaded.height, 2);
 
     let _ = fs::remove_file(path);
 }
