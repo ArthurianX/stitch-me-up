@@ -5,6 +5,8 @@
 //! The shared option logic lives in the private `apply_*` methods, which return plain
 //! `String` errors and are exercised by the native unit tests.
 
+use std::collections::BTreeMap;
+
 #[cfg(target_arch = "wasm32")]
 use js_sys::Array;
 use stitch_core::{ComposeOptions, PaneStyle};
@@ -40,7 +42,7 @@ pub struct Composer {
     options: ComposeOptions,
     // Same for the per-pane overrides.
     #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
-    pane_styles: Vec<Option<PaneStyle>>,
+    pane_styles: BTreeMap<usize, PaneStyle>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -208,36 +210,32 @@ impl Composer {
         corner_radius: u32,
     ) -> Result<(), String> {
         let color = parse_color_hex(frame_color)?;
-        if self.pane_styles.len() <= index {
-            self.pane_styles.resize(index + 1, None);
-        }
-        self.pane_styles[index] = Some(PaneStyle {
-            frame: (frame_width > 0).then_some(Frame {
-                width: frame_width,
-                color,
-            }),
-            corner_radius,
-        });
+        self.pane_styles.insert(
+            index,
+            PaneStyle {
+                frame: (frame_width > 0).then_some(Frame {
+                    width: frame_width,
+                    color,
+                }),
+                corner_radius,
+            },
+        );
         Ok(())
     }
 
     /// Removes the override at `index`; the pane inherits the global style again.
     fn apply_clear_pane_style(&mut self, index: usize) {
-        if let Some(slot) = self.pane_styles.get_mut(index) {
-            *slot = None;
-        }
+        self.pane_styles.remove(&index);
     }
 
     /// Applies stored overrides to the decoded images by index; a stored index with no
     /// matching image is an error.
     fn apply_pane_styles(&self, images: &mut [InputImage]) -> Result<(), String> {
-        for (index, style) in self.pane_styles.iter().enumerate() {
-            if let Some(style) = style {
-                let image = images
-                    .get_mut(index)
-                    .ok_or_else(|| format!("pane style index {index} has no matching image"))?;
-                image.style = Some(*style);
-            }
+        for (index, style) in &self.pane_styles {
+            let image = images
+                .get_mut(*index)
+                .ok_or_else(|| format!("pane style index {index} has no matching image"))?;
+            image.style = Some(*style);
         }
         Ok(())
     }
@@ -487,11 +485,10 @@ mod tests {
             .apply_pane_style(1, 4, "#ff0000", 8)
             .expect("set style");
 
-        assert_eq!(composer.pane_styles.len(), 2);
-        assert_eq!(composer.pane_styles[0], None);
+        assert_eq!(composer.pane_styles.len(), 1);
         assert_eq!(
-            composer.pane_styles[1],
-            Some(PaneStyle {
+            composer.pane_styles.get(&1),
+            Some(&PaneStyle {
                 frame: Some(Frame {
                     width: 4,
                     color: RgbaColor {
@@ -506,7 +503,39 @@ mod tests {
         );
 
         composer.apply_clear_pane_style(1);
-        assert_eq!(composer.pane_styles[1], None);
+        assert!(composer.pane_styles.is_empty());
+    }
+
+    #[test]
+    fn huge_pane_style_index_does_not_allocate_or_panic() {
+        let mut composer = Composer::default();
+        composer
+            .apply_pane_style(usize::MAX, 1, "#000000", 0)
+            .expect("set style");
+
+        let mut images = vec![InputImage::new(1, 1, vec![0, 0, 0, 255])];
+        let error = composer.apply_pane_styles(&mut images).unwrap_err();
+
+        assert_eq!(
+            error,
+            format!("pane style index {} has no matching image", usize::MAX)
+        );
+    }
+
+    #[test]
+    fn unmatched_pane_style_index_errors_at_compose() {
+        let mut composer = Composer::default();
+        composer
+            .apply_pane_style(5, 1, "#000000", 0)
+            .expect("set style");
+
+        let mut images = vec![
+            InputImage::new(1, 1, vec![0, 0, 0, 255]),
+            InputImage::new(1, 1, vec![0, 0, 0, 255]),
+        ];
+        let error = composer.apply_pane_styles(&mut images).unwrap_err();
+
+        assert_eq!(error, "pane style index 5 has no matching image");
     }
 
     #[test]
