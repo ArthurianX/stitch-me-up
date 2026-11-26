@@ -1,5 +1,4 @@
 // DOM wiring for the Stitch Me Up web demo. Pure logic lives in lib.js.
-import initWasm, { Composer } from "./pkg/stitch_wasm.js";
 import {
   pixelCount,
   validateFile,
@@ -25,6 +24,8 @@ const state = {
   busy: false,
   lastUrl: null,
   composerReady: false,
+  Composer: null,
+  initFailed: false,
 };
 
 let nextId = 1;
@@ -180,6 +181,15 @@ async function addFiles(fileList) {
 
   clearUploadErrors();
 
+  if (!state.composerReady) {
+    showUploadErrors([
+      state.initFailed
+        ? "The WebAssembly module failed to load; composing is unavailable."
+        : "The WebAssembly module is still loading; try again in a moment.",
+    ]);
+    return;
+  }
+
   const decoded = [];
   const messages = [];
   for (const file of files) {
@@ -279,7 +289,7 @@ async function compose() {
     const buffers = await Promise.all(state.items.map((item) => item.file.arrayBuffer()));
     if (token !== state.changeToken) return;
 
-    const composer = new Composer();
+    const composer = new state.Composer();
     composer.set_layout(layout, columns);
     if (layout === "grid") {
       const weights = parseWeights($("weights").value);
@@ -381,12 +391,16 @@ async function loadVersion() {
 
 async function startWasm() {
   try {
-    await initWasm();
+    const module = await import("./pkg/stitch_wasm.js");
+    await module.default();
+    state.Composer = module.Composer;
     state.composerReady = true;
+    state.initFailed = false;
     showStatus("Ready.");
     if (state.items.length > 0) schedule();
   } catch (error) {
     state.composerReady = false;
+    state.initFailed = true;
     showStatus("WebAssembly module failed to load.");
     showError(
       `${error.message} — build the module first with ` +
