@@ -990,3 +990,50 @@ fn none_styles_match_explicit_global_styles_byte_for_byte() {
 
     assert_eq!(inherited, overridden);
 }
+
+#[test]
+fn resize_does_not_bleed_transparent_color_into_visible_edges() {
+    // 5x4 image: columns 0-3 opaque red, column 4 fully transparent blue.
+    let mut pixels = Vec::new();
+    for _y in 0..4 {
+        for x in 0..5 {
+            if x < 4 {
+                pixels.extend_from_slice(&[255, 0, 0, 255]);
+            } else {
+                pixels.extend_from_slice(&[0, 0, 255, 0]);
+            }
+        }
+    }
+    let image_a = stitch_core::InputImage::new(5, 4, pixels);
+    let image_b = solid_image(5, 8, [0, 255, 0, 255]);
+    let options = ComposeOptions {
+        layout: LayoutKind::BeforeAfter,
+        spacing: Spacing::all(0),
+        padding: Insets::default(),
+        background: RgbaColor::WHITE,
+        alignment: Alignment::Start,
+        resize_mode: ResizeMode::None,
+        pane_style: PaneStyle::default(),
+        divider: None,
+        column_weights: Vec::new(),
+    };
+
+    let composed = compose(&[image_a, image_b], &options).expect("compose before-after");
+
+    // Left pane is image A scaled to the shared height (8): 10x8 at (0, 0).
+    for y in 0..8 {
+        for x in 0..10 {
+            let pixel = pixel_at(&composed.pixels, composed.width, x, y);
+            assert_eq!(pixel[0], 255, "r at ({x},{y})");
+            assert_eq!(pixel[1], pixel[2], "g == b at ({x},{y})");
+        }
+    }
+
+    let filter_ran = (0..8).any(|y| {
+        (0..10).any(|x| {
+            let pixel = pixel_at(&composed.pixels, composed.width, x, y);
+            pixel[1] > 0 && pixel[1] < 255
+        })
+    });
+    assert!(filter_ran, "triangle filter should actually run");
+}

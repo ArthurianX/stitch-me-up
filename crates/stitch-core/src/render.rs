@@ -121,9 +121,40 @@ fn prepare_pixels(
 
     let rgba = image::RgbaImage::from_raw(image.width, image.height, image.pixels.clone())
         .ok_or(ComposeError::DimensionOverflow)?;
-    let resized = image::imageops::resize(&rgba, target_width, target_height, FilterType::Triangle);
 
-    Ok(resized.into_raw())
+    // Premultiply before resampling so transparent pixels contribute no color;
+    // unpremultiply afterwards. Alpha is left untouched by both steps.
+    let mut premultiplied = rgba.clone();
+    for pixel in premultiplied.pixels_mut() {
+        let alpha = u32::from(pixel[3]);
+        for channel in pixel.0.iter_mut().take(3) {
+            *channel = ((u32::from(*channel) * alpha + 127) / 255) as u8;
+        }
+    }
+
+    let resized = image::imageops::resize(
+        &premultiplied,
+        target_width,
+        target_height,
+        FilterType::Triangle,
+    );
+
+    let mut pixels = resized.into_raw();
+    for chunk in pixels.as_chunks_mut::<4>().0 {
+        let alpha = u32::from(chunk[3]);
+        if alpha == 0 {
+            chunk[0] = 0;
+            chunk[1] = 0;
+            chunk[2] = 0;
+            continue;
+        }
+        for channel in chunk.iter_mut().take(3) {
+            let value = (u32::from(*channel) * 255 + alpha / 2) / alpha;
+            *channel = u8::try_from(value).unwrap_or(u8::MAX);
+        }
+    }
+
+    Ok(pixels)
 }
 
 fn blit_image(
