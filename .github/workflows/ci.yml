@@ -77,3 +77,28 @@ jobs:
 
       - name: Run node tests
         run: node --test examples/web/tests/*.test.js
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web-tests/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('web-tests/package-lock.json') }}
+
+      - name: Install web-tests dependencies
+        working-directory: web-tests
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: web-tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: web-tests
+        run: npx playwright test

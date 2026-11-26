@@ -4,3 +4,5 @@
 .serena/
 examples/web/pkg/
 examples/web/version.json
+web-tests/node_modules/
+web-tests/test-results/
