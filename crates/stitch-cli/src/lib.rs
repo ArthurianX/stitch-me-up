@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
-    compose, load_image_from_path, save_png, Alignment, ComposeOptions, Divider, Frame, Insets,
-    LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
+    compose, load_image_from_path, save_jpeg, save_png, Alignment, ComposeOptions, Divider, Frame,
+    Insets, LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
 };
 
 pub use color::parse_rgba_color;
@@ -94,6 +94,12 @@ pub struct CombineArgs {
     )]
     pub background: RgbaColor,
 
+    #[arg(long, value_enum, default_value_t = OutputFormatArg::Png, help = "Output format: png (default) or jpeg")]
+    pub format: OutputFormatArg,
+
+    #[arg(long, value_name = "1-100", value_parser = clap::value_parser!(u8).range(1..=100), help = "JPEG quality, only valid with --format jpeg (default 90)")]
+    pub quality: Option<u8>,
+
     #[arg(long, value_enum, default_value_t = AlignmentArg::Center)]
     pub alignment: AlignmentArg,
 
@@ -159,6 +165,12 @@ pub struct CombineArgs {
     pub divider_color: RgbaColor,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum OutputFormatArg {
+    Png,
+    Jpeg,
+}
+
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum LayoutArg {
     Vertical,
@@ -193,6 +205,10 @@ pub fn run_cli(cli: Cli) -> Result<()> {
 }
 
 pub fn combine(args: CombineArgs) -> Result<()> {
+    if args.format == OutputFormatArg::Png && args.quality.is_some() {
+        bail!("--quality only applies to --format jpeg");
+    }
+
     if matches!(args.layout, LayoutArg::BeforeAfter) && args.inputs.len() != 2 {
         bail!("before-after layout requires exactly 2 input images");
     }
@@ -243,8 +259,17 @@ pub fn combine(args: CombineArgs) -> Result<()> {
     };
 
     let composed = compose(&images, &options).context("failed to compose images")?;
-    save_png(&args.output, &composed)
-        .with_context(|| format!("failed to write PNG output {}", args.output.display()))?;
+    match args.format {
+        OutputFormatArg::Png => {
+            save_png(&args.output, &composed)
+                .with_context(|| format!("failed to write PNG output {}", args.output.display()))?;
+        }
+        OutputFormatArg::Jpeg => {
+            save_jpeg(&args.output, &composed, args.quality.unwrap_or(90)).with_context(|| {
+                format!("failed to write JPEG output {}", args.output.display())
+            })?;
+        }
+    }
 
     println!("Wrote {}", args.output.display());
     Ok(())
@@ -670,6 +695,8 @@ mod tests {
             inputs: vec!["a.png".into(), "b.png".into(), "c.png".into()],
             output: "out.png".into(),
             layout: LayoutArg::BeforeAfter,
+            format: OutputFormatArg::Png,
+            quality: None,
             spacing: 0,
             spacing_x: None,
             spacing_y: None,
@@ -704,6 +731,8 @@ mod tests {
             inputs: vec!["a.png".into(), "b.png".into()],
             output: "out.png".into(),
             layout: LayoutArg::Grid,
+            format: OutputFormatArg::Png,
+            quality: None,
             spacing: 0,
             spacing_x: None,
             spacing_y: None,
@@ -1021,5 +1050,137 @@ mod tests {
             resize_mode(ResizeModeArg::FitToSameHeight),
             ResizeMode::FitToSameHeight
         );
+    }
+
+    #[test]
+    fn parses_default_format_as_png_with_no_quality() {
+        let cli = Cli::parse_from(sample_args());
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.format, OutputFormatArg::Png);
+                assert_eq!(args.quality, None);
+            }
+        }
+    }
+
+    #[test]
+    fn parses_jpeg_format_with_quality() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--format",
+            "jpeg",
+            "--quality",
+            "80",
+            "--output",
+            "out.jpg",
+            "a.png",
+            "b.png",
+        ]);
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(args.format, OutputFormatArg::Jpeg);
+                assert_eq!(args.quality, Some(80));
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_quality_with_png_format() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--quality",
+            "80",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+        let result = run_cli(cli);
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "--quality only applies to --format jpeg"
+        );
+    }
+
+    #[test]
+    fn rejects_out_of_range_quality_values() {
+        for bad in ["0", "101"] {
+            let result = Cli::try_parse_from([
+                "stitch-me-up",
+                "combine",
+                "--format",
+                "jpeg",
+                "--quality",
+                bad,
+                "--output",
+                "out.jpg",
+                "a.png",
+                "b.png",
+            ]);
+            assert!(result.is_err(), "expected error for quality {bad}");
+        }
+    }
+
+    #[test]
+    fn jpeg_run_writes_file_with_jpeg_magic() {
+        let dir = std::env::temp_dir().join(format!(
+            "stitch-cli-jpeg-test-{}-{}",
+            std::process::id(),
+            "run"
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let tiny = |r: u8| stitch_core::ComposedImage {
+            width: 2,
+            height: 2,
+            pixels: vec![r, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, r, 255],
+        };
+        let input_a = dir.join("a.png");
+        let input_b = dir.join("b.png");
+        save_png(&input_a, &tiny(200)).unwrap();
+        save_png(&input_b, &tiny(100)).unwrap();
+
+        let output = dir.join("out.jpg");
+        let args = CombineArgs {
+            inputs: vec![input_a, input_b],
+            output: output.clone(),
+            layout: LayoutArg::Vertical,
+            format: OutputFormatArg::Jpeg,
+            quality: Some(80),
+            spacing: 0,
+            spacing_x: None,
+            spacing_y: None,
+            padding: 0,
+            padding_top: None,
+            padding_right: None,
+            padding_bottom: None,
+            padding_left: None,
+            background: RgbaColor::WHITE,
+            alignment: AlignmentArg::Center,
+            resize_mode: ResizeModeArg::None,
+            columns: 2,
+            column_weights: Vec::new(),
+            pane_styles: Vec::new(),
+            frame_width: 0,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 0,
+            divider_width: 0,
+            divider_color: RgbaColor::WHITE,
+        };
+
+        combine(args).unwrap();
+
+        let bytes = std::fs::read(&output).unwrap();
+        assert!(bytes.len() > 2);
+        assert_eq!(
+            &bytes[..2],
+            &[0xFF, 0xD8],
+            "output must start with JPEG magic"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
