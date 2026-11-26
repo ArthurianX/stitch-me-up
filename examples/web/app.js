@@ -281,27 +281,41 @@ async function compose() {
     const png = composer.compose(buffers.map((b) => new Uint8Array(b)));
     if (token !== state.changeToken) return;
 
-    if (state.lastUrl) URL.revokeObjectURL(state.lastUrl);
     const blob = new Blob([png], { type: "image/png" });
-    state.lastUrl = URL.createObjectURL(blob);
+    const nextUrl = URL.createObjectURL(blob);
 
-    const bitmap = await createImageBitmap(blob);
-    if (token !== state.changeToken) return;
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(blob);
+    } catch (error) {
+      URL.revokeObjectURL(nextUrl);
+      throw error;
+    }
+
+    if (token !== state.changeToken) {
+      URL.revokeObjectURL(nextUrl);
+      return;
+    }
+
+    const previousUrl = state.lastUrl;
+    state.lastUrl = nextUrl;
 
     const preview = $("preview");
-    preview.src = state.lastUrl;
+    preview.src = nextUrl;
     preview.hidden = false;
     const empty = emptyMessage();
     if (empty) empty.hidden = true;
 
     $("meta").textContent = `${bitmap.width}×${bitmap.height} · ${formatBytes(blob.size)}`;
     const download = $("download");
-    download.href = state.lastUrl;
+    download.href = nextUrl;
     download.download = downloadName(new Date());
     download.hidden = false;
 
     const warning = totalWarning(totalPixels(state.items));
     showStatus(warning ?? "");
+
+    if (previousUrl) URL.revokeObjectURL(previousUrl);
   } catch (error) {
     if (token !== state.changeToken) return;
     showError(`Could not compose: ${error.message}`);
