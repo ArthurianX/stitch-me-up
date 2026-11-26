@@ -42,6 +42,23 @@ function clearError() {
   box.hidden = true;
 }
 
+function showUploadErrors(messages) {
+  const list = $("upload-errors");
+  list.innerHTML = "";
+  for (const message of messages) {
+    const li = document.createElement("li");
+    li.textContent = message;
+    list.appendChild(li);
+  }
+  list.hidden = false;
+}
+
+function clearUploadErrors() {
+  const list = $("upload-errors");
+  list.innerHTML = "";
+  list.hidden = true;
+}
+
 function showStatus(message) {
   $("status").textContent = message;
 }
@@ -161,46 +178,52 @@ async function addFiles(fileList) {
   const files = Array.from(fileList);
   if (files.length === 0) return;
 
-  clearError();
+  clearUploadErrors();
 
   const decoded = [];
-  const rejections = [];
+  const messages = [];
   for (const file of files) {
     try {
       const bitmap = await createImageBitmap(file);
       const pixels = pixelCount(bitmap.width, bitmap.height);
       const error = validateFile({ name: file.name, type: file.type }, pixels);
       if (error) {
-        rejections.push(error);
+        messages.push(error);
       } else {
         decoded.push({ file, name: file.name, width: bitmap.width, height: bitmap.height, pixels });
       }
       bitmap.close();
     } catch (error) {
-      rejections.push(`${file.name}: could not read image (${error.message})`);
+      messages.push(`${file.name}: could not read image (${error.message})`);
     }
   }
 
-  if (rejections.length > 0) {
-    showError(rejections.join("; "));
+  if (decoded.length === 0 && messages.length === 0) {
+    messages.push("No images selected.");
   }
 
-  if (decoded.length === 0) {
-    if (rejections.length === 0) showError("No images selected.");
-    return;
+  let batchRejected = false;
+  if (decoded.length > 0) {
+    const check = canAddFiles(state.items.length, decoded.length);
+    if (!check.ok) {
+      messages.push(check.message);
+      batchRejected = true;
+    }
+
+    const incomingPixels = decoded.reduce((sum, d) => sum + d.pixels, 0);
+    const total = totalPixels(state.items) + incomingPixels;
+    const totalError = totalLimit(total);
+    if (totalError) {
+      messages.push(totalError);
+      batchRejected = true;
+    }
   }
 
-  const check = canAddFiles(state.items.length, decoded.length);
-  if (!check.ok) {
-    showError(check.message);
-    return;
+  if (messages.length > 0) {
+    showUploadErrors(messages);
   }
 
-  const incomingPixels = decoded.reduce((sum, d) => sum + d.pixels, 0);
-  const total = totalPixels(state.items) + incomingPixels;
-  const totalError = totalLimit(total);
-  if (totalError) {
-    showError(totalError);
+  if (decoded.length === 0 || batchRejected) {
     return;
   }
 
