@@ -4,6 +4,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use image::ImageEncoder;
+
 use helpers::solid_image;
 use stitch_core::{
     compose_to_png, encode_png, load_image_from_bytes, load_image_from_path, save_png, Alignment,
@@ -277,4 +279,106 @@ fn encode_png_still_encodes_valid_1x1() {
 
     let encoded = encode_png(&image).expect("encode valid 1x1");
     assert!(encoded.starts_with(b"\x89PNG"));
+}
+
+fn minimal_tiff_orientation_6() -> Vec<u8> {
+    let mut tiff = Vec::new();
+    tiff.extend_from_slice(b"II*\0");
+    tiff.extend_from_slice(&8u32.to_le_bytes()); // IFD offset
+    tiff.extend_from_slice(&1u16.to_le_bytes()); // entry count
+    tiff.extend_from_slice(&0x0112u16.to_le_bytes()); // tag: Orientation
+    tiff.extend_from_slice(&3u16.to_le_bytes()); // type: SHORT
+    tiff.extend_from_slice(&1u32.to_le_bytes()); // count
+    tiff.extend_from_slice(&6u32.to_le_bytes()); // value
+    tiff.extend_from_slice(&0u32.to_le_bytes()); // next IFD
+    tiff
+}
+
+fn colored_jpeg(width: u32, height: u32, exif: Option<Vec<u8>>) -> Vec<u8> {
+    let mut pixels = Vec::new();
+    for y in 0..height {
+        for x in 0..width {
+            let (r, g, b) = if y == 0 && x == 0 {
+                (255, 0, 0)
+            } else if y == 0 {
+                (0, 255, 0)
+            } else if x == 0 {
+                (0, 0, 255)
+            } else {
+                (255, 255, 0)
+            };
+            pixels.extend_from_slice(&[r, g, b]);
+        }
+    }
+    let mut out = Vec::new();
+    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 100);
+    if let Some(metadata) = exif {
+        encoder.set_exif_metadata(metadata).expect("set exif");
+    }
+    encoder
+        .write_image(&pixels, width, height, image::ExtendedColorType::Rgb8)
+        .expect("encode jpeg");
+    out
+}
+
+#[test]
+fn exif_orientation_rotates_jpeg_from_bytes() {
+    let bytes = colored_jpeg(2, 3, Some(minimal_tiff_orientation_6()));
+    let loaded = load_image_from_bytes(&bytes).expect("load bytes");
+    let source = image::RgbImage::from_raw(
+        2,
+        3,
+        vec![
+            255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255, 0,
+        ],
+    )
+    .expect("source");
+    let expected = image::DynamicImage::ImageRgb8(source).rotate90().to_rgba8();
+
+    assert_eq!(loaded.width, 3);
+    assert_eq!(loaded.height, 2);
+
+    // JPEG is lossy: compare corner pixels with a tolerance.
+    let corners = [(0usize, 0usize), (2, 0), (0, 1), (2, 1)];
+    for (x, y) in corners {
+        let i = (y * 3 + x) * 4;
+        let actual = &loaded.pixels[i..i + 4];
+        let want = &expected.as_raw()[i..i + 4];
+        for (a, w) in actual.iter().zip(want.iter()) {
+            assert!(
+                a.abs_diff(*w) <= 24,
+                "corner ({x},{y}) channel mismatch: actual {actual:?}, expected {want:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn exif_orientation_rotates_jpeg_from_path() {
+    let bytes = colored_jpeg(2, 3, Some(minimal_tiff_orientation_6()));
+    let path = temp_path("oriented.jpg");
+    fs::write(&path, &bytes).expect("write jpeg");
+
+    let loaded = load_image_from_path(&path).expect("load path");
+
+    assert_eq!(loaded.width, 3);
+    assert_eq!(loaded.height, 2);
+
+    let _ = fs::remove_file(path);
+}
+
+#[test]
+fn untagged_jpeg_keeps_dimensions() {
+    let bytes = colored_jpeg(2, 3, None);
+    let loaded = load_image_from_bytes(&bytes).expect("load bytes");
+    assert_eq!(loaded.width, 2);
+    assert_eq!(loaded.height, 3);
+
+    let path = temp_path("untagged.jpg");
+    fs::write(&path, &bytes).expect("write jpeg");
+    let loaded = load_image_from_path(&path).expect("load path");
+    assert_eq!(loaded.width, 2);
+    assert_eq!(loaded.height, 3);
+
+    let _ = fs::remove_file(path);
 }

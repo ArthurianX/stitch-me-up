@@ -1,12 +1,21 @@
+use std::io::Cursor;
 use std::path::Path;
 
-use image::ImageEncoder;
+use image::{DynamicImage, ImageDecoder, ImageEncoder, ImageError, ImageReader};
 
 use crate::error::ComposeError;
 use crate::types::{ComposedImage, InputImage};
 
-pub fn load_image_from_path(path: &Path) -> Result<InputImage, ComposeError> {
-    let image = image::open(path)?;
+fn load_image_from_reader<R: std::io::BufRead + std::io::Seek>(
+    reader: ImageReader<R>,
+) -> Result<InputImage, ComposeError> {
+    let mut decoder = reader
+        .with_guessed_format()
+        .map_err(ImageError::IoError)?
+        .into_decoder()?;
+    let orientation = decoder.orientation()?;
+    let mut image = DynamicImage::from_decoder(decoder)?;
+    image.apply_orientation(orientation);
     let rgba = image.to_rgba8();
 
     Ok(InputImage::new(
@@ -16,15 +25,13 @@ pub fn load_image_from_path(path: &Path) -> Result<InputImage, ComposeError> {
     ))
 }
 
-pub fn load_image_from_bytes(bytes: &[u8]) -> Result<InputImage, ComposeError> {
-    let image = image::load_from_memory(bytes)?;
-    let rgba = image.to_rgba8();
+pub fn load_image_from_path(path: &Path) -> Result<InputImage, ComposeError> {
+    let reader = ImageReader::open(path).map_err(ImageError::IoError)?;
+    load_image_from_reader(reader)
+}
 
-    Ok(InputImage::new(
-        rgba.width(),
-        rgba.height(),
-        rgba.into_raw(),
-    ))
+pub fn load_image_from_bytes(bytes: &[u8]) -> Result<InputImage, ComposeError> {
+    load_image_from_reader(ImageReader::new(Cursor::new(bytes)))
 }
 
 fn validate_output_buffer(image: &ComposedImage) -> Result<(), ComposeError> {
