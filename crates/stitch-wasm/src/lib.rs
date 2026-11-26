@@ -14,9 +14,11 @@ use stitch_core::{ComposeOptions, PaneStyle};
 #[cfg(target_arch = "wasm32")]
 use stitch_core::compose;
 #[cfg(target_arch = "wasm32")]
-use stitch_core::Insets;
+use stitch_core::load_image_from_bytes;
 #[cfg(target_arch = "wasm32")]
-use stitch_core::{encode_png, load_image_from_bytes};
+use stitch_core::Insets;
+#[cfg(any(target_arch = "wasm32", test))]
+use stitch_core::{encode_jpeg, encode_png, ComposedImage};
 #[cfg(any(target_arch = "wasm32", test))]
 use stitch_core::{
     Alignment, Divider, Frame, InputImage, LayoutKind, ResizeMode, RgbaColor, Spacing,
@@ -126,9 +128,7 @@ impl Composer {
         self.apply_clear_pane_style(index);
     }
 
-    /// Each element must be a `Uint8Array` containing PNG or JPEG bytes.
-    /// Returns a `Uint8Array` of PNG bytes.
-    pub fn compose(&self, images: Array) -> Result<Vec<u8>, JsError> {
+    fn compose_images(&self, images: Array) -> Result<ComposedImage, JsError> {
         let buffers = images
             .iter()
             .map(|value| {
@@ -146,8 +146,27 @@ impl Composer {
             .map_err(js_error)?;
 
         self.apply_pane_styles(&mut decoded).map_err(js_error)?;
-        let composed = compose(&decoded, &self.options).map_err(js_error)?;
+        compose(&decoded, &self.options).map_err(js_error)
+    }
+
+    /// Each element must be a `Uint8Array` containing PNG or JPEG bytes.
+    /// Returns a `Uint8Array` of PNG bytes.
+    pub fn compose(&self, images: Array) -> Result<Vec<u8>, JsError> {
+        let composed = self.compose_images(images)?;
         encode_png(&composed).map_err(js_error)
+    }
+
+    /// Each element must be a `Uint8Array` containing PNG or JPEG bytes.
+    /// `format` is `png` or `jpeg` (case-insensitive, trimmed); quality is
+    /// only used for JPEG.
+    pub fn compose_with_format(
+        &self,
+        images: Array,
+        format: &str,
+        quality: u8,
+    ) -> Result<Vec<u8>, JsError> {
+        let composed = self.compose_images(images)?;
+        encode_output(&composed, format, quality).map_err(js_error)
     }
 }
 
@@ -238,6 +257,18 @@ impl Composer {
             image.style = Some(*style);
         }
         Ok(())
+    }
+}
+
+#[cfg(any(target_arch = "wasm32", test))]
+fn encode_output(composed: &ComposedImage, format: &str, quality: u8) -> Result<Vec<u8>, String> {
+    let normalized = normalize(format);
+    match normalized.as_str() {
+        "png" => encode_png(composed).map_err(|e| e.to_string()),
+        "jpeg" => encode_jpeg(composed, quality).map_err(|e| e.to_string()),
+        _ => Err(format!(
+            "unknown output format \"{normalized}\"; expected png or jpeg"
+        )),
     }
 }
 
@@ -577,6 +608,49 @@ mod tests {
         let error = composer.apply_pane_styles(&mut images).unwrap_err();
 
         assert_eq!(error, "pane style index 2 has no matching image");
+    }
+
+    #[test]
+    fn encode_output_returns_png_magic_for_png_even_when_uppercase_and_padded() {
+        let composed = test_composed_image();
+        for format in ["PNG", "  png  "] {
+            let bytes = super::encode_output(&composed, format, 90).unwrap();
+            assert!(bytes.starts_with(b"\x89PNG\r\n\x1a\n"));
+        }
+    }
+
+    #[test]
+    fn encode_output_returns_jpeg_magic_for_jpeg() {
+        let composed = test_composed_image();
+        let bytes = super::encode_output(&composed, "jpeg", 90).unwrap();
+        assert!(bytes.starts_with(b"\xff\xd8"));
+    }
+
+    #[test]
+    fn encode_output_rejects_unknown_format() {
+        let composed = test_composed_image();
+        let error = super::encode_output(&composed, "webp", 90).unwrap_err();
+        assert_eq!(
+            error,
+            "unknown output format \"webp\"; expected png or jpeg"
+        );
+    }
+
+    #[test]
+    fn encode_output_rejects_jpeg_quality_zero() {
+        let composed = test_composed_image();
+        let error = super::encode_output(&composed, "jpeg", 0).unwrap_err();
+        assert!(error.contains("jpeg quality 0"));
+    }
+
+    fn test_composed_image() -> stitch_core::ComposedImage {
+        stitch_core::ComposedImage {
+            width: 2,
+            height: 2,
+            pixels: vec![
+                255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+            ],
+        }
     }
 
     #[test]
