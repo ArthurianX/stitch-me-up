@@ -4,6 +4,38 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
+## 0.5.1 — 2026-11-26
+
+Correctness release: six defects fixed across the render, IO, WASM, and web layers,
+plus a Playwright browser suite in CI. No engine behavior change beyond the fixes.
+
+### Fixed
+
+- Premultiplied resize: `prepare_pixels` now premultiplies straight RGBA before
+  `imageops::resize` and unpremultiplies after, so transparent edges no longer tint
+  visible pixels (`BeforeAfter` included).
+- `InvalidOutputBuffer` instead of encoder panics: `encode_png`/`save_png` validate
+  the buffer length (`width*height*4`) before touching the encoder and return
+  `ComposeError::InvalidOutputBuffer` instead of panicking.
+- Sparse `set_pane_style`: pane styles are stored in a `BTreeMap`, so setting a style
+  at a large index no longer traps (`RuntimeError: unreachable`) or allocates a huge
+  vector; unmatched indices error at compose time.
+- Preview URL kept until replacement decodes: the new blob URL is decoded before the
+  old preview is swapped and revoked, so a failed decode leaves the previous preview
+  and download link intact.
+- Upload notices survive composition: upload rejections are listed in a dedicated
+  `#upload-errors` region that compose no longer clears, so batch-limit and per-file
+  messages persist across a successful compose.
+- Dynamic wasm import + readiness guard: the demo loads `pkg/stitch_wasm.js` via
+  `await import(...)` and refuses file drops until the module is ready, showing
+  guidance instead of failing silently.
+
+### Added
+
+- `ComposeError::InvalidOutputBuffer` variant (`width`, `height`, `expected`, `actual`).
+- Playwright CI suite (`web-tests/`) covering the demo's failure paths, run in the
+  `web` job alongside the node tests.
+
 ## 0.5.0 — 2026-11-25
 
 Distribution release: package rename, prebuilt binaries, and the first crates.io publish.
