@@ -119,18 +119,18 @@ fn prepare_pixels(
         return Ok(image.pixels.clone());
     }
 
-    let rgba = image::RgbaImage::from_raw(image.width, image.height, image.pixels.clone())
-        .ok_or(ComposeError::DimensionOverflow)?;
-
     // Premultiply before resampling so transparent pixels contribute no color;
     // unpremultiply afterwards. Alpha is left untouched by both steps.
-    let mut premultiplied = rgba.clone();
-    for pixel in premultiplied.pixels_mut() {
-        let alpha = u32::from(pixel[3]);
-        for channel in pixel.0.iter_mut().take(3) {
+    let mut pixels = image.pixels.clone();
+    for chunk in pixels.as_chunks_mut::<4>().0 {
+        let alpha = u32::from(chunk[3]);
+        for channel in chunk.iter_mut().take(3) {
             *channel = ((u32::from(*channel) * alpha + 127) / 255) as u8;
         }
     }
+
+    let premultiplied = image::RgbaImage::from_raw(image.width, image.height, pixels)
+        .ok_or(ComposeError::DimensionOverflow)?;
 
     let resized = image::imageops::resize(
         &premultiplied,
