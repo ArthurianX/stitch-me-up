@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 name = "stitch_wasm"
 
 [dependencies]
-stitch-me-up-core = { path = "../stitch-core", version = "0.5.1" }
+stitch-me-up-core = { path = "../stitch-core", version = "0.6.0" }
 wasm-bindgen.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
