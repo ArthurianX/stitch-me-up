@@ -1,0 +1,10 @@
+{
+  "name": "stitch-me-up-web-tests",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  },
+  "scripts": {
+    "test": "playwright test"
+  }
+}
