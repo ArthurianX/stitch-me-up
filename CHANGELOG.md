@@ -4,6 +4,31 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
+## 0.6.0 — 2026-11-26
+
+### Added
+
+- JPEG output across the stack: `encode_jpeg`/`save_jpeg` in the core (`stitch-me-up-core`),
+  `--format png|jpeg` and `--quality 1-100` in the CLI (default PNG, quality default 90),
+  `compose_with_format(images, format, quality)` in the WASM adapter, and a format
+  switch in the web demo.
+- `ComposeError::InvalidJpegQuality` (`jpeg quality {quality} is outside 1..=100`).
+- `ComposeError::InvalidOutputBuffer` variant (already present in 0.5.1; documented here).
+- EXIF-oriented decoding: loaders call `ImageDecoder::orientation` and apply it during
+  decode, so tagged images come out upright.
+- White matte for transparency: `encode_jpeg` blends alpha against opaque white before
+  encoding, since JPEG has no alpha channel.
+
+### Changed
+
+- EXIF-oriented decoding is now automatic. Images with orientation tags are decoded
+  rotated/flipped to the canonical orientation, so output bytes can differ from 0.5.x for
+  tagged images (0.6.0 rather than 0.5.2).
+
+### Fixed
+
+- None.
+
 ## 0.5.1 — 2026-11-26
 
 Correctness release: six defects fixed across the render, IO, WASM, and web layers,

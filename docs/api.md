@@ -246,11 +246,23 @@ pub fn load_image_from_bytes(bytes: &[u8]) -> Result<InputImage, ComposeError>;
 
 pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 pub fn encode_png(image: &ComposedImage) -> Result<Vec<u8>, ComposeError>;
+pub fn save_jpeg(path: &Path, image: &ComposedImage, quality: u8) -> Result<(), ComposeError>;
+pub fn encode_jpeg(image: &ComposedImage, quality: u8) -> Result<Vec<u8>, ComposeError>;
 ```
 
 `compose` is `plan_layout` followed by rendering. Input formats are PNG and JPEG;
-output is always RGBA8 PNG. `encode_png` and `load_image_from_bytes` perform no
-filesystem access.
+output is RGBA8 PNG (or JPEG via `encode_jpeg`/`save_jpeg`). `encode_png`,
+`encode_jpeg` and `load_image_from_bytes` perform no filesystem access.
+
+**EXIF orientation.** Loaders apply the image's EXIF orientation before decoding
+completes: they call `ImageDecoder::orientation`, then decode, then apply the
+resulting orientation to the `DynamicImage`. Tagged images therefore decode upright;
+no manual rotation/flip handling is needed by callers.
+
+**White matte for JPEG.** JPEG has no alpha channel, so `encode_jpeg` blends each
+pixel against opaque white (`src.a * rgb + (255 - src.a) * 255` over `255`, with
+rounding) before encoding. Transparent regions render white rather than black.
+`quality` must be in `1..=100`; anything else returns `InvalidJpegQuality`.
 
 ## `ComposeError` variants
 
@@ -267,6 +279,8 @@ filesystem access.
 | `ZeroColumnWeight { index }` | `column weight {index} must be at least 1` |
 | `DimensionOverflow` | `image dimension overflow while calculating layout` |
 | `CoordinateOverflow` | `output coordinates overflowed during rendering` |
+| `InvalidOutputBuffer { width, height, expected, actual }` | `output image {width}x{height} has invalid buffer length: expected {expected}, got {actual}` |
+| `InvalidJpegQuality { quality }` | `jpeg quality {quality} is outside 1..=100` |
 | `ImageIo(image::ImageError)` | `image I/O error: {0}` |
 
 ## Behavior notes

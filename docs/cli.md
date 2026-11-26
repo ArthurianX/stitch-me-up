@@ -4,8 +4,8 @@
 stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 ```
 
-`combine` reads 2 or more PNG or JPEG files and writes one PNG. This matches
-`stitch-me-up combine --help`.
+`combine` reads 2 or more PNG or JPEG files and writes one PNG or JPEG (default PNG).
+This matches `stitch-me-up combine --help`.
 
 ## Flags
 
@@ -33,6 +33,8 @@ stitch-me-up combine [OPTIONS] --output <FILE> <INPUT> <INPUT>...
 | `--divider-width <N>` | `0` | Divider width in pixels between before-after panes (`0` disables the divider) |
 | `--divider-color <COLOR>` | `#000000` | Divider color as `#RRGGBB` or `#RRGGBBAA` |
 | `--pane-style <SPEC>` | unset, repeatable | Per-image decoration override. `SPEC` is `INDEX:KEY=VALUE[,KEY=VALUE...]`; `INDEX` is `1`-based; keys are `frame-width` (u32), `frame-color` (`#RRGGBB`/`#RRGGBBAA`), `corner-radius` (u32) |
+| `--format <FORMAT>` | `png` | Output format: `png` or `jpeg` |
+| `--quality <1-100>` | `90` | JPEG quality (only with `--format jpeg`; default 90) |
 | `-h, --help` | — | Print help |
 
 Value rules:
@@ -59,6 +61,9 @@ Value rules:
   (`--pane-style "1:frame-color=#f59e0b"`), so the shell does not treat the rest as a
   comment.
 - `--alignment` defaults to `center` in the CLI although the core default is `start`.
+- `--quality` is only valid with `--format jpeg`; passing it with the default `png` format
+  fails with `--quality only applies to --format jpeg`. The value must be `1..=100`
+  (clap rejects out-of-range values before rendering).
 
 ## Examples
 
@@ -66,6 +71,12 @@ Plain vertical stack:
 
 ```bash
 stitch-me-up combine --output out.png a.png b.png c.png
+```
+
+JPEG output:
+
+```bash
+stitch-me-up combine --format jpeg --quality 85 --output out.jpg a.png b.png
 ```
 
 Before-after pair with a divider and rounded corners:
@@ -147,6 +158,7 @@ without a `Caused by:` chain (these are CLI-level checks, not core errors):
 
 - `before-after layout requires exactly 2 input images`
 - `grid layout requires at least 1 column`
+- `--quality only applies to --format jpeg`
 
 The CLI also rejects malformed `--pane-style` specs after parsing, before loading any
 input (single-line errors, no `Caused by:` chain):

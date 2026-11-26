@@ -6,7 +6,7 @@ This project is intentionally about composition, not panorama stitching or compu
 
 ## Status
 
-The repository contains a `v0.5.0` workspace:
+The repository contains a `v0.6.0` workspace:
 
 - a Cargo workspace
 - a pure Rust core crate for layout planning and rendering
@@ -78,7 +78,8 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
 - Alpha compositing: source-over blending (opaque pixels are copied, fully transparent pixels are skipped)
 - Input formats: PNG and JPEG
-- Output format: PNG
+- Output format: PNG and JPEG (PNG default)
+- EXIF orientation: images are decoded upright via `ImageDecoder::orientation` (no manual rotation needed)
 
 ## Decoration
 
@@ -124,6 +125,12 @@ stitch-me-up combine \
   --background "#ffffff" \
   --output out.png \
   a.png b.png c.png
+```
+
+JPEG output (`--quality` defaults to 90 and only applies with `--format jpeg`):
+
+```bash
+stitch-me-up combine --format jpeg --quality 85 --output out.jpg a.png b.png
 ```
 
 `--spacing` sets both axes; `--spacing-x` and `--spacing-y` override one axis each:

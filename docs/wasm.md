@@ -1,7 +1,7 @@
 # WASM Reference (`stitch-me-up-wasm`, lib `stitch_wasm`)
 
 The `Composer` class exposes the `stitch-me-up-core` engine to JavaScript. Everything runs
-client-side: inputs are PNG/JPEG **bytes**, the output is always **PNG bytes**.
+client-side: inputs are PNG/JPEG **bytes**; output is PNG bytes by default.
 
 ## Live demo
 
@@ -68,7 +68,24 @@ const url = URL.createObjectURL(new Blob([png], { type: "image/png" }));
 ```
 
 Every element must be a `Uint8Array` of PNG or JPEG bytes; the return value is a
-`Uint8Array` of PNG bytes.
+`Uint8Array` of PNG bytes. `compose` is always PNG — it ignores any format selection.
+
+### `compose_with_format(images, format, quality)`
+
+```js
+const jpg = composer.compose_with_format(images, "jpeg", 85);
+const url = URL.createObjectURL(new Blob([jpg], { type: "image/jpeg" }));
+```
+
+`format` is `"png"` or `"jpeg"` (case-insensitive, surrounding whitespace trimmed);
+`quality` is only used for JPEG and is ignored for PNG. Every element of `images`
+must be a `Uint8Array` of PNG or JPEG bytes; the return value is a `Uint8Array`
+matching the requested format.
+
+Errors:
+
+- unknown format: `unknown output format "<value>"; expected png or jpeg`
+- JPEG quality outside 1–100: `jpeg quality <q> is outside 1..=100`
 
 Stored per-pane styles are applied to the decoded images after decoding. An index with
 no matching input throws, so a stale `set_pane_style(2, ...)` with only one input fails
@@ -97,7 +114,7 @@ Compose errors:
 
 ## Limitations
 
-- Only PNG and JPEG inputs are decoded; the output format is always PNG.
+- Only PNG and JPEG inputs are decoded; output is PNG via `compose`, or PNG/JPEG via `compose_with_format`.
 - `wasm-pack` is not part of CI, so the JS bindings are checked only by the wasm target
   compile; the browser behavior is verified manually via the web example.
 - The generated `pkg/` directory and `version.json` are local build output and are

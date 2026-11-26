@@ -97,6 +97,25 @@ Decision log:
 - [x] `pages.yml` deploys `examples/web` to GitHub Pages on every push to `main`
 - [x] `ci.yml` gains a non-deploying `web` job (wasm build + node tests)
 
+## 0.6 — Real photos (done)
+
+- [x] EXIF-oriented decoding: loaders read `ImageDecoder::orientation` and apply it during decode
+- [x] JPEG output across core (`encode_jpeg`/`save_jpeg`), CLI (`--format png|jpeg`, `--quality 1-100`), WASM (`compose_with_format`), and the web demo
+- [x] White matte for transparency in JPEG output (alpha blended against white before encoding)
+- [x] `InvalidJpegQuality` and `InvalidOutputBuffer` error variants
+
+Decision log:
+
+- **Auto-EXIF.** Decoding applies orientation automatically; callers never handle tagged
+  images manually.
+- **White matte.** JPEG has no alpha, so transparent pixels are blended against opaque
+  white rather than black.
+- **PNG stays the default.** `compose`/`--format png` keep byte-identical behavior for
+  untagged images; JPEG is opt-in.
+- **Format is a parameter, not a new compose.** Core exposes `encode_jpeg`/`save_jpeg`
+  alongside the PNG helpers; the CLI gains `--format`/`--quality` and the WASM adapter
+  gains `compose_with_format`. `compose` itself is unchanged for PNG.
+
 ## Out of scope
 
 - Panorama stitching, computer vision, and any AI features
