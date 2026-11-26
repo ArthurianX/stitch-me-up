@@ -14,6 +14,7 @@ import {
   parseWeights,
   formatBytes,
   downloadName,
+  isValidQuality,
 } from "./lib.js";
 
 const $ = (id) => document.getElementById(id);
@@ -311,10 +312,22 @@ async function compose() {
       composer.set_divider(Number($("divider-width").value) || 0, $("divider-color").value);
     }
 
-    const png = composer.compose(buffers.map((b) => new Uint8Array(b)));
+    const format = $("format").value === "jpeg" ? "jpeg" : "png";
+    const qualityRaw = Number($("quality").value);
+    if (format === "jpeg" && !isValidQuality(qualityRaw)) {
+      showError(`Invalid JPEG quality "${$("quality").value}": must be an integer 1-100.`);
+      clearBusyIfCurrent(token);
+      return;
+    }
+    const output = composer.compose_with_format(
+      buffers.map((b) => new Uint8Array(b)),
+      format,
+      format === "jpeg" ? qualityRaw : 90
+    );
     if (token !== state.changeToken) return;
 
-    const blob = new Blob([png], { type: "image/png" });
+    const mime = format === "jpeg" ? "image/jpeg" : "image/png";
+    const blob = new Blob([output], { type: mime });
     const nextUrl = URL.createObjectURL(blob);
 
     let bitmap;
@@ -342,7 +355,7 @@ async function compose() {
     $("meta").textContent = `${bitmap.width}×${bitmap.height} · ${formatBytes(blob.size)}`;
     const download = $("download");
     download.href = nextUrl;
-    download.download = downloadName(new Date());
+    download.download = downloadName(new Date(), format === "jpeg" ? "jpg" : "png");
     download.hidden = false;
 
     const warning = totalWarning(totalPixels(state.items));
@@ -355,6 +368,11 @@ async function compose() {
   } finally {
     clearBusyIfCurrent(token);
   }
+}
+
+function setFormatControls() {
+  const format = $("format").value;
+  $("quality").disabled = format !== "jpeg";
 }
 
 function setLayoutControls() {
@@ -444,6 +462,11 @@ function wire() {
   });
   $("layout").addEventListener("change", () => {
     setLayoutControls();
+  setFormatControls();
+    schedule();
+  });
+  $("format").addEventListener("change", () => {
+    setFormatControls();
     schedule();
   });
 }

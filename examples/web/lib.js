@@ -121,10 +121,15 @@ export function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-export function downloadName(date) {
+export function downloadName(date, ext = "png") {
+  const safeExt = ext === "jpg" || ext === "jpeg" ? "jpg" : "png";
   const pad = (value) => String(value).padStart(2, "0");
   const stamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-  return `stitch-me-up-${stamp}.png`;
+  return `stitch-me-up-${stamp}.${safeExt}`;
+}
+
+export function isValidQuality(value) {
+  return Number.isInteger(value) && value >= 1 && value <= 100;
 }
 
 // Returns null when the total is within the limit, otherwise a short message.

@@ -20,6 +20,7 @@ import {
   parseWeights,
   formatBytes,
   downloadName,
+  isValidQuality,
 } from "../lib.js";
 
 test("constants match the spec limits", () => {
@@ -155,6 +156,23 @@ test("formatBytes renders human-readable sizes", () => {
 test("downloadName formats a fixed date", () => {
   const date = new Date(2026, 10, 25, 9, 5, 3);
   assert.equal(downloadName(date), "stitch-me-up-20261125-090503.png");
+});
+
+test("downloadName honors a jpg extension and sanitizes others", () => {
+  const date = new Date(2026, 10, 25, 9, 5, 3);
+  assert.equal(downloadName(date, "jpg"), "stitch-me-up-20261125-090503.jpg");
+  assert.equal(downloadName(date, "png"), "stitch-me-up-20261125-090503.png");
+  assert.equal(downloadName(date, "gif"), "stitch-me-up-20261125-090503.png");
+});
+
+test("isValidQuality enforces integer 1..=100", () => {
+  assert.equal(isValidQuality(0), false);
+  assert.equal(isValidQuality(1), true);
+  assert.equal(isValidQuality(90), true);
+  assert.equal(isValidQuality(100), true);
+  assert.equal(isValidQuality(101), false);
+  assert.equal(isValidQuality("90"), false);
+  assert.equal(isValidQuality(90.5), false);
 });
 
 test("totalLimit rejects totals over 100 MP", () => {

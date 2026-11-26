@@ -131,6 +131,23 @@
             </label>
           </div>
         </fieldset>
+
+        <fieldset class="panel">
+          <legend>Output</legend>
+          <div class="row">
+            <label>
+              Format
+              <select id="format">
+                <option value="png" selected>png</option>
+                <option value="jpeg">jpeg</option>
+              </select>
+            </label>
+            <label>
+              JPEG quality
+              <input type="number" id="quality" min="1" max="100" value="90" disabled />
+            </label>
+          </div>
+        </fieldset>
       </section>
 
       <section class="preview-pane" aria-label="Preview">

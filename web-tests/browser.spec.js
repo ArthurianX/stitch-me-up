@@ -128,6 +128,30 @@ test.describe("web demo", () => {
     await expect(page.locator("#error")).toBeHidden();
   });
 
+  test("jpeg download switches format", async ({ page }) => {
+    await page.goto("./");
+    await waitReady(page);
+    await upload(page, [fixture("a.png"), fixture("b.png")]);
+    await waitPreview(page);
+
+    await expect(page.locator("#quality")).toBeDisabled();
+
+    await page.locator("#format").selectOption("jpeg");
+    await expect(page.locator("#quality")).toBeEnabled();
+    await expect(page.locator("#meta")).toHaveText(/^\d+×\d+ · /, { timeout: 15_000 });
+    await expect(page.locator("#download")).toHaveAttribute("download", /\.jpg$/, { timeout: 15_000 });
+
+    const src = await page.locator("#preview").getAttribute("src");
+    const contentType = await page.evaluate(async (s) => {
+      const res = await fetch(s);
+      return res.headers.get("content-type");
+    }, src);
+    expect(contentType).toMatch(/image\/jpeg/);
+
+    await page.locator("#format").selectOption("png");
+    await expect(page.locator("#quality")).toBeDisabled();
+  });
+
   test("missing wasm module shows guidance", async ({ page }) => {
     await page.route("**/pkg/stitch_wasm.js", (route) => route.abort());
     await page.goto("./");
