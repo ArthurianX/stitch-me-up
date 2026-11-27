@@ -154,12 +154,34 @@ fn prepare_pixels(image: &InputImage, placed: &PlacedImage) -> Result<Vec<u8>, C
         if crop_right > image.width || crop_bottom > image.height {
             return Err(ComposeError::CoordinateOverflow);
         }
-        let mut pixels = Vec::with_capacity((crop.width * crop.height * 4) as usize);
-        let row_bytes = (crop.width * 4) as usize;
+        let total = u64::from(crop.width)
+            .checked_mul(u64::from(crop.height))
+            .and_then(|value| value.checked_mul(4))
+            .ok_or(ComposeError::CoordinateOverflow)?;
+        let mut pixels = Vec::with_capacity(
+            usize::try_from(total).map_err(|_| ComposeError::CoordinateOverflow)?,
+        );
+        let row_bytes = usize::try_from(
+            u64::from(crop.width)
+                .checked_mul(4)
+                .ok_or(ComposeError::CoordinateOverflow)?,
+        )
+        .map_err(|_| ComposeError::CoordinateOverflow)?;
         for row in 0..crop.height {
-            let y = crop.y + row;
-            let start = ((y * image.width + crop.x) * 4) as usize;
-            pixels.extend_from_slice(&image.pixels[start..start + row_bytes]);
+            let y = crop
+                .y
+                .checked_add(row)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+            let start = linear_rgba_index(image.width, crop.x, y)?;
+            let end = start
+                .checked_add(row_bytes)
+                .ok_or(ComposeError::CoordinateOverflow)?;
+            pixels.extend_from_slice(
+                image
+                    .pixels
+                    .get(start..end)
+                    .ok_or(ComposeError::CoordinateOverflow)?,
+            );
         }
         // Crop already matches the placed size: keep cropped pixels untouched.
         if crop.width == target_width && crop.height == target_height {
