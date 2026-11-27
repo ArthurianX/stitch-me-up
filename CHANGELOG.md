@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
-## Unreleased
+## 0.7.0 — 2026-11-27
 
 ### Added
 

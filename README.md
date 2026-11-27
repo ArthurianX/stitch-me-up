@@ -6,7 +6,7 @@ This project is intentionally about composition, not panorama stitching or compu
 
 ## Status
 
-The repository contains a `v0.6.0` workspace:
+The repository contains a `v0.7.0` workspace:
 
 - a Cargo workspace
 - a pure Rust core crate for layout planning and rendering
