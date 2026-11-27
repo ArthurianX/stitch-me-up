@@ -1,10 +1,10 @@
 mod helpers;
 
-use helpers::{pixel_at, solid_image};
+use helpers::{pixel_at, solid_image, striped_image};
 use stitch_core::render::render;
 use stitch_core::{
-    compose, Alignment, CanvasPlan, ComposeOptions, Divider, Frame, Insets, LayoutKind, PaneStyle,
-    PlacedImage, ResizeMode, RgbaColor, Spacing,
+    compose, Alignment, CanvasPlan, CellSize, ComposeOptions, Divider, Frame, Insets, LayoutKind,
+    PaneStyle, PlacedImage, ResizeMode, RgbaColor, Spacing,
 };
 
 #[test]
@@ -1053,4 +1053,114 @@ fn resize_does_not_bleed_transparent_color_into_visible_edges() {
         })
     });
     assert!(filter_ran, "triangle filter should actually run");
+}
+
+fn cell_grid(columns: u32, width: u32, height: u32) -> ComposeOptions {
+    ComposeOptions {
+        layout: LayoutKind::Grid { columns },
+        cell_size: Some(CellSize { width, height }),
+        ..ComposeOptions::default()
+    }
+}
+
+#[test]
+fn crops_odd_excess_from_the_right_edge() {
+    let stripes = [[255, 0, 0, 255], [0, 255, 0, 255], [0, 0, 255, 255]];
+    let images = vec![striped_image(6, 2, &stripes), striped_image(6, 2, &stripes)];
+
+    let composed = compose(&images, &cell_grid(2, 3, 2)).expect("compose");
+
+    assert_eq!((composed.width, composed.height), (6, 2));
+    // Source columns 0..5 are R G B R G B; crop x=1, width=3 keeps G B R.
+    assert_eq!(pixel_at(&composed.pixels, 6, 0, 0), [0, 255, 0, 255]);
+    assert_eq!(pixel_at(&composed.pixels, 6, 1, 0), [0, 0, 255, 255]);
+    assert_eq!(pixel_at(&composed.pixels, 6, 2, 0), [255, 0, 0, 255]);
+    assert_eq!(pixel_at(&composed.pixels, 6, 3, 0), [0, 255, 0, 255]);
+}
+
+#[test]
+fn fills_tiles_from_wide_and_tall_sources() {
+    let images = vec![
+        solid_image(8, 2, [255, 0, 0, 255]),
+        solid_image(2, 8, [0, 0, 255, 255]),
+    ];
+
+    let composed = compose(&images, &cell_grid(2, 4, 4)).expect("compose");
+
+    for y in 0..4 {
+        for x in 0..4 {
+            assert_eq!(pixel_at(&composed.pixels, 8, x, y), [255, 0, 0, 255]);
+            assert_eq!(pixel_at(&composed.pixels, 8, x + 4, y), [0, 0, 255, 255]);
+        }
+    }
+}
+
+#[test]
+fn fills_a_tile_from_an_extreme_aspect_source() {
+    let images = vec![
+        solid_image(4000, 10, [10, 20, 30, 255]),
+        solid_image(10, 4000, [40, 50, 60, 255]),
+    ];
+
+    let composed = compose(&images, &cell_grid(2, 32, 32)).expect("compose");
+
+    assert_eq!(pixel_at(&composed.pixels, 64, 0, 0), [10, 20, 30, 255]);
+    assert_eq!(pixel_at(&composed.pixels, 64, 63, 31), [40, 50, 60, 255]);
+}
+
+#[test]
+fn upscales_small_sources_to_fill_the_tile() {
+    let images = vec![
+        solid_image(2, 1, [255, 0, 0, 255]),
+        solid_image(1, 2, [0, 255, 0, 255]),
+    ];
+
+    let composed = compose(&images, &cell_grid(2, 4, 4)).expect("compose");
+
+    for y in 0..4 {
+        for x in 0..4 {
+            assert_eq!(pixel_at(&composed.pixels, 8, x, y), [255, 0, 0, 255]);
+            assert_eq!(pixel_at(&composed.pixels, 8, x + 4, y), [0, 255, 0, 255]);
+        }
+    }
+}
+
+#[test]
+fn frame_and_radius_follow_the_cell_boundary() {
+    let style = PaneStyle {
+        frame: Some(Frame {
+            width: 2,
+            color: RgbaColor::WHITE,
+        }),
+        corner_radius: 3,
+    };
+    let images = vec![
+        solid_image(20, 10, [255, 0, 0, 255]),
+        solid_image(20, 10, [255, 0, 0, 255]),
+    ];
+    let mut options = cell_grid(2, 10, 10);
+    options.pane_style = style;
+    options.background = RgbaColor::TRANSPARENT;
+
+    let composed = compose(&images, &options).expect("compose");
+
+    assert_eq!(pixel_at(&composed.pixels, 20, 0, 0), [0, 0, 0, 0]);
+    assert_eq!(pixel_at(&composed.pixels, 20, 2, 2), [255, 255, 255, 255]);
+    assert_eq!(pixel_at(&composed.pixels, 20, 5, 5), [255, 0, 0, 255]);
+}
+
+#[test]
+fn crop_preserves_alpha_without_tinting() {
+    let pixels = vec![
+        255, 0, 0, 128, // kept by the crop
+        0, 0, 255, 255, // kept by the crop
+        0, 0, 255, 255, // dropped from the right
+    ];
+    let source = stitch_core::InputImage::new(3, 1, pixels);
+    let images = vec![source.clone(), source];
+
+    let composed = compose(&images, &cell_grid(2, 2, 1)).expect("compose");
+
+    // Crop keeps source columns 0..1 (excess 1, offset 0) with no resize.
+    assert_eq!(pixel_at(&composed.pixels, 4, 0, 0), [255, 0, 0, 128]);
 }

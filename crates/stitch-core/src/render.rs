@@ -21,7 +21,7 @@ pub fn render(
 
     for placed in &plan.placed_images {
         let source = &images[placed.index];
-        let source_pixels = prepare_pixels(source, placed.width, placed.height)?;
+        let source_pixels = prepare_pixels(source, placed)?;
         let style = source.style.as_ref().unwrap_or(&options.pane_style);
         blit_image(
             &mut pixels,
@@ -110,36 +110,16 @@ fn fill_background(pixels: &mut [u8], background: [u8; 4]) {
     }
 }
 
-fn prepare_pixels(
-    image: &InputImage,
-    target_width: u32,
-    target_height: u32,
-) -> Result<Vec<u8>, ComposeError> {
-    if image.width == target_width && image.height == target_height {
-        return Ok(image.pixels.clone());
-    }
-
-    // Premultiply before resampling so transparent pixels contribute no color;
-    // unpremultiply afterwards. Alpha is left untouched by both steps.
-    let mut pixels = image.pixels.clone();
+fn premultiply(pixels: &mut [u8]) {
     for chunk in pixels.as_chunks_mut::<4>().0 {
         let alpha = u32::from(chunk[3]);
         for channel in chunk.iter_mut().take(3) {
             *channel = ((u32::from(*channel) * alpha + 127) / 255) as u8;
         }
     }
+}
 
-    let premultiplied = image::RgbaImage::from_raw(image.width, image.height, pixels)
-        .ok_or(ComposeError::DimensionOverflow)?;
-
-    let resized = image::imageops::resize(
-        &premultiplied,
-        target_width,
-        target_height,
-        FilterType::Triangle,
-    );
-
-    let mut pixels = resized.into_raw();
+fn unpremultiply(pixels: &mut [u8]) {
     for chunk in pixels.as_chunks_mut::<4>().0 {
         let alpha = u32::from(chunk[3]);
         if alpha == 0 {
@@ -153,6 +133,63 @@ fn prepare_pixels(
             *channel = u8::try_from(value).unwrap_or(u8::MAX);
         }
     }
+}
+
+fn prepare_pixels(image: &InputImage, placed: &PlacedImage) -> Result<Vec<u8>, ComposeError> {
+    let target_width = placed.width;
+    let target_height = placed.height;
+
+    let (pixels, crop_width, crop_height) = if let Some(crop) = placed.crop {
+        if crop.width == 0 || crop.height == 0 {
+            return Err(ComposeError::CoordinateOverflow);
+        }
+        let crop_right = crop
+            .x
+            .checked_add(crop.width)
+            .ok_or(ComposeError::CoordinateOverflow)?;
+        let crop_bottom = crop
+            .y
+            .checked_add(crop.height)
+            .ok_or(ComposeError::CoordinateOverflow)?;
+        if crop_right > image.width || crop_bottom > image.height {
+            return Err(ComposeError::CoordinateOverflow);
+        }
+        let mut pixels = Vec::with_capacity((crop.width * crop.height * 4) as usize);
+        let row_bytes = (crop.width * 4) as usize;
+        for row in 0..crop.height {
+            let y = crop.y + row;
+            let start = ((y * image.width + crop.x) * 4) as usize;
+            pixels.extend_from_slice(&image.pixels[start..start + row_bytes]);
+        }
+        // Crop already matches the placed size: keep cropped pixels untouched.
+        if crop.width == target_width && crop.height == target_height {
+            return Ok(pixels);
+        }
+        (pixels, crop.width, crop.height)
+    } else {
+        if image.width == target_width && image.height == target_height {
+            return Ok(image.pixels.clone());
+        }
+        (image.pixels.clone(), image.width, image.height)
+    };
+
+    // Premultiply before resampling so transparent pixels contribute no color;
+    // unpremultiply afterwards. Alpha is left untouched by both steps.
+    let mut pixels = pixels;
+    premultiply(&mut pixels);
+
+    let premultiplied = image::RgbaImage::from_raw(crop_width, crop_height, pixels)
+        .ok_or(ComposeError::DimensionOverflow)?;
+
+    let resized = image::imageops::resize(
+        &premultiplied,
+        target_width,
+        target_height,
+        FilterType::Triangle,
+    );
+
+    let mut pixels = resized.into_raw();
+    unpremultiply(&mut pixels);
 
     Ok(pixels)
 }
