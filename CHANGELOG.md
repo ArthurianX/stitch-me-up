@@ -4,6 +4,34 @@ All notable changes to this project are documented here.
 
 The format follows Keep a Changelog; version numbers follow Semantic Versioning.
 
+## Unreleased
+
+### Added
+
+- Grid cell sizing: `CellSize { width, height }` and `SourceCrop { x, y, width, height }`
+  in the core, `ComposeOptions.cell_size` (default `None`), `PlacedImage.crop`, and the
+  `--cell-size WIDTHxHEIGHT` flag (x/X separator, default off) in the CLI, `set_cell_size`
+  / `clear_cell_size` in the WASM adapter, and grid tile-shape presets (off / square
+  320×320 / 4:5 320×400) in the web demo.
+- `ComposeError::CellSizeRequiresGrid` (`cell size is only supported by the grid layout`),
+  `ComposeError::InvalidCellSize` (`cell size {width}x{height} must be at least 1x1`),
+  `ComposeError::CellSizeConflictsWithColumnWeights` (`cell size cannot be combined with
+  column weights`), `ComposeError::CellSizeConflictsWithResizeMode` (`cell size cannot be
+  combined with resize_mode`).
+
+### Changed
+
+- Grid cell mode: every tile is exactly W×H, tracks are sized to the cell, columns are
+  clamped to the image count, partial last rows leave background cells, and images are
+  center-cropped to fill each tile (equal aspect/exact dims → no crop; otherwise the binding
+  axis is kept and the other is rounded, with floor offsets dropping the odd extra pixel
+  from the right/bottom; upscaling allowed). `alignment` has no effect; `resolve_sizes`
+  is bypassed.
+
+### Fixed
+
+- None.
+
 ## 0.6.0 — 2026-11-26
 
 ### Added

@@ -14,7 +14,7 @@ The repository contains a `v0.6.0` workspace:
 - tests covering layout, rendering, image I/O, and CLI argument handling
 - baseline community and GitHub repository files
 
-`Grid` is implemented with row-major placement and auto-sized column and row tracks. `BeforeAfter` takes exactly two images, scales both to their shared tallest height while preserving aspect ratio, and places them side by side, ignoring `resize_mode`.
+`Grid` is implemented with row-major placement and auto-sized column and row tracks; `--cell-size WIDTHxHEIGHT` switches it to uniform `W x H` tiles with center-cropping. `BeforeAfter` takes exactly two images, scales both to their shared tallest height while preserving aspect ratio, and places them side by side, ignoring `resize_mode`.
 
 ## Distribution
 
@@ -73,6 +73,7 @@ pub fn save_png(path: &Path, image: &ComposedImage) -> Result<(), ComposeError>;
 ## Current Features
 
 - Layouts: `VerticalStack`, `HorizontalStack`, `Grid`, `BeforeAfter`
+- Uniform grid tiles: `--cell-size WIDTHxHEIGHT` (`CellSize` in the core, `set_cell_size`/`clear_cell_size` in WASM) crops every image to an exact `W x H` cell
 - Options: per-axis spacing (`Spacing { x, y }` — uniform via `--spacing`, overridden per axis by `--spacing-x`/`--spacing-y`), grid column weights, padding, background color, alignment. `resize_mode` is ignored by `BeforeAfter`, which always equalizes pane heights.
 - Per-image decoration overrides: `InputImage::style` (core) replaces the global frame/corner radius for one pane; the CLI gets `--pane-style <INDEX>:<KEY=VALUE>[,...]` (1-based, repeatable) and the WASM adapter gets `set_pane_style` / `clear_pane_style` (0-based).
 - Resize modes: `None`, `FitToSameWidth`, `FitToSameHeight`
@@ -131,6 +132,13 @@ JPEG output (`--quality` defaults to 90 and only applies with `--format jpeg`):
 
 ```bash
 stitch-me-up combine --format jpeg --quality 85 --output out.jpg a.png b.png
+```
+
+Uniform tiles (every image center-cropped to 320x320, 6 images, 3 columns, spacing 8 → 976x648):
+
+```bash
+stitch-me-up combine --layout grid --columns 3 --cell-size 320x320 --spacing 8 \
+  --output tiles.png a.png b.png c.png d.png e.png f.png
 ```
 
 `--spacing` sets both axes; `--spacing-x` and `--spacing-y` override one axis each:

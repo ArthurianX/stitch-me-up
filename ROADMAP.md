@@ -116,6 +116,31 @@ Decision log:
   alongside the PNG helpers; the CLI gains `--format`/`--quality` and the WASM adapter
   gains `compose_with_format`. `compose` itself is unchanged for PNG.
 
+## 0.7 — Uniform tiles
+
+- [x] Grid-only `cell_size`: every tile exactly `W x H`, tracks sized to the cell,
+      columns clamped to the image count, partial last row background, `alignment`
+      has no effect
+- [x] Center-crop to fill the cell (binding axis kept, other rounded, floor offsets)
+- [x] New errors: `CellSizeRequiresGrid`, `InvalidCellSize`,
+      `CellSizeConflictsWithColumnWeights`, `CellSizeConflictsWithResizeMode`
+- [x] CLI `--cell-size WIDTHxHEIGHT` (x/X separator, case-insensitive, default off,
+      pre-checks before loading)
+- [x] WASM `set_cell_size` / `clear_cell_size`
+- [x] Web demo tile-shape presets (off / square 320×320 / 4:5 320×400); a preset clears
+      and disables Weights
+
+Decision log:
+
+- **Grid-only.** `Fill` needs a rectangle; a whole-canvas fill cannot satisfy "every tile
+  exactly W×H" without also deciding an outer band, so the option is restricted to the
+  grid layout.
+- **Explicit dimensions over an aspect ratio.** A caller should be able to compute the
+  canvas size before running anything; `W x H` plus the grid math gives that directly.
+- **Crop lives in the plan.** `PlacedImage::crop` carries the source rectangle; rendering
+  slices and scales rather than resizing an unplaced image, so the plan stays pure
+  geometry.
+
 ## Out of scope
 
 - Panorama stitching, computer vision, and any AI features

@@ -94,6 +94,35 @@ Track sizing example: images 40x30, 20x60, 30x30 with `--columns 2 --spacing 8
 and row heights are `max(30, 60) = 60` and `max(30) = 30`. The canvas is
 `40 + 8 + 20 + 32 = 100` wide and `60 + 8 + 30 + 32 = 130` tall.
 
+### Uniform tiles (`--cell-size`)
+
+Setting `--cell-size WxH` replaces natural grid sizing with a fixed tile size. Every
+tile is exactly `W x H`; each column and row track is sized to the cell, `--columns`
+is clamped to the image count, and a partial last row leaves background cells. Each
+image is center-cropped to the cell: equal aspect or exact dimensions → no crop;
+otherwise the binding axis is kept and the other is rounded (`(a·b + d/2)/d`), with
+floor offsets dropping the odd extra pixel from the right/bottom; upscaling is allowed.
+`alignment` has no effect (the track is the cell) and `--resize-mode` is rejected as a
+conflict.
+
+```text
+cell = 320x320
+┌─────────────┬─────────────┬─────────────┐
+│  (cropped)  │  (cropped)  │  (cropped)  │
+└─────────────┴─────────────┴─────────────┘
+  320 + 8 + 320 + 8 + 320 = 976 wide
+  320 + 8 + 320             = 648 high
+```
+
+Example: 6 images, `--columns 3 --cell-size 320x320 --spacing 8 --padding 0` →
+content `3 * 320 + 2 * 8 = 976` wide, `2 * 320 + 8 = 648` high, so the canvas is
+`976 x 648` (padding 0 adds nothing).
+
+```bash
+stitch-me-up combine --layout grid --columns 3 --cell-size 320x320 --spacing 8 \
+  --output tiles.png a.png b.png c.png d.png e.png f.png
+```
+
 ### Weights
 
 `--column-weights` replaces the natural column widths with relative tracks. Tracks are

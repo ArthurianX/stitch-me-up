@@ -12,7 +12,7 @@ WebAssembly module and composes locally.
 - Reorder and remove images (drag-and-drop plus labelled buttons)
 - Live preview with debounced composition (250 ms) and a generation counter, so a slow
   decode never overwrites a newer preview
-- Layout-aware controls: columns/weights for grid, divider for before-after
+- Layout-aware controls: columns/weights for grid, tile-shape presets (off / square 320×320 / 4:5 320×400) for grid, divider for before-after
 - Download the full-resolution PNG as `stitch-me-up-YYYYMMDD-HHMMSS.png`
 
 ## Local build and serve
@@ -63,6 +63,10 @@ shows the engine version and deployed commit from `version.json`; a missing file
 dev, `file://`) hides the footer version instead of erroring.
 
 ## Notes
+
+- Tile-shape presets appear only for the grid layout. A preset sets the grid cell
+  size (square → 320×320, 4:5 → 320×400) and clears and disables the Weights input,
+  so a preset and column weights never combine.
 
 - Inputs must be PNG or JPEG bytes; the composed output is always PNG.
 - The divider controls are only enabled for the `before-after` layout, because the core

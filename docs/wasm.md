@@ -53,6 +53,8 @@ radius 0, no divider).
 | `set_frame(width, hex)` | width `0` disables the frame but still validates the color |
 | `set_corner_radius(radius)` | pixels; clamped to half the smaller pane dimension |
 | `set_column_weights(weights)` | `Uint32Array` of relative grid column widths; count must match the layout's column count, empty array keeps auto sizing |
+| `set_cell_size(width, height)` | Fixed tile size for the grid layout; each image is center-cropped to the tile. Grid-only; non-zero values fail at compose time |
+| `clear_cell_size()` | Restores automatic grid sizing (`cell_size` cleared) |
 | `set_divider(width, hex)` | width `0` disables the divider but still validates the color. Setting a non-zero divider and then composing a non-`before-after` layout throws |
 | `set_pane_style(index, frameWidth, frameColorHex, cornerRadius)` | 0-based input index; stores a complete per-pane style override. `frameWidth == 0` disables that pane's frame while still validating the color |
 | `clear_pane_style(index)` | Removes the override; the pane inherits the global style again |
@@ -111,6 +113,14 @@ Compose errors:
   `grid layouts require at least one column`, `image I/O error: ...`
 - `pane style index N has no matching image`: a stored `set_pane_style` index has no
   corresponding input image
+
+## Tile presets
+
+The web demo maps its grid `Tile shape` select to these setters: `off` (the default)
+keeps automatic sizing and leaves `set_cell_size` untouched; `square` sets
+`set_cell_size(320, 320)`; `portrait` sets `set_cell_size(320, 400)`. Applying a preset
+clears and disables the Weights input, so a preset and `set_column_weights` never
+combine.
 
 ## Limitations
 

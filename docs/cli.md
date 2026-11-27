@@ -16,6 +16,7 @@ This matches `stitch-me-up combine --help`.
 | `--layout <LAYOUT>` | `vertical` | `vertical`, `horizontal`, `grid`, `before-after` |
 | `--columns <COLUMNS>` | `2` | Grid column count when layout is `grid` |
 | `--column-weights <W1,W2,...>` | unset | Comma-separated relative grid column widths; the count must match `--columns`, and an empty value keeps auto sizing |
+| `--cell-size <WIDTHxHEIGHT>` | unset | Fixed tile size for the grid layout; each image is center-cropped to the tile. Case-insensitive `x`/`X` separator; values must be at least 1 |
 | `--spacing <SPACING>` | `0` | Space between images in pixels, overridden per axis by `--spacing-x`/`--spacing-y` |
 | `--spacing-x <SPACING_X>` | unset | Horizontal gap between images in pixels, overriding `--spacing` |
 | `--spacing-y <SPACING_Y>` | unset | Vertical gap between images in pixels, overriding `--spacing` |
@@ -52,6 +53,15 @@ Value rules:
   case-sensitively by clap.
 - `--column-weights` is only valid with `--layout grid`. It must list exactly
   `--columns` weights, each at least `1`; otherwise the run fails before rendering.
+- `--cell-size` is only valid with `--layout grid`. The separator (`x` or `X`) is
+  case-insensitive and any value with a zero dimension fails with
+  `--cell-size must be at least 1x1`; a malformed value exits `2` with
+  `invalid cell size "<value>"; expected WIDTHxHEIGHT with values of at least 1, e.g. 320x320`.
+  `--cell-size` cannot be combined with `--column-weights` or `--resize-mode`.
+  Pre-checks run before loading any input and print a single-line `Error:` message
+  without a `Caused by:` chain: `--cell-size is only supported by the grid layout`,
+  `--cell-size must be at least 1x1`, `--cell-size cannot be combined with --column-weights`,
+  `--cell-size cannot be combined with --resize-mode`.
 - `--pane-style` overrides start from the global style fields (`--frame-width`,
   `--frame-color`, `--corner-radius`) and merge per key; key order never matters and a
   repeated `INDEX` or `KEY` keeps the later value. `frame-width=0` disables the frame for
@@ -94,6 +104,14 @@ Decorated grid with asymmetric padding:
 stitch-me-up combine --layout grid --columns 3 --spacing 8 \
   --padding 16 --padding-left 32 --background "#f8fafc" \
   --output grid.png a.png b.png c.png d.png
+```
+
+Uniform tiles (every image center-cropped to 320x320; 6 images, 3 columns, spacing 8,
+padding 0 → 976x648):
+
+```bash
+stitch-me-up combine --layout grid --columns 3 --cell-size 320x320 --spacing 8 \
+  --output tiles.png a.png b.png c.png d.png e.png f.png
 ```
 
 Weighted grid columns (the second column is twice the first):
@@ -153,12 +171,16 @@ $ echo $?
 1
 ```
 
-The CLI also rejects two combinations before loading anything, as a single-line message
+The CLI also rejects a few combinations before loading anything, as a single-line message
 without a `Caused by:` chain (these are CLI-level checks, not core errors):
 
 - `before-after layout requires exactly 2 input images`
 - `grid layout requires at least 1 column`
 - `--quality only applies to --format jpeg`
+- `--cell-size is only supported by the grid layout`
+- `--cell-size must be at least 1x1`
+- `--cell-size cannot be combined with --column-weights`
+- `--cell-size cannot be combined with --resize-mode`
 
 The CLI also rejects malformed `--pane-style` specs after parsing, before loading any
 input (single-line errors, no `Caused by:` chain):

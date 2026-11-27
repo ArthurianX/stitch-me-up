@@ -52,6 +52,7 @@ pub struct PlacedImage {
     pub y: u32,
     pub width: u32,
     pub height: u32,
+    pub crop: Option<SourceCrop>,  // `None` when the image fills the cell exactly
 }
 ```
 
@@ -101,6 +102,26 @@ pub enum HexColorError {
 ```
 
 A 6-digit value gets `a = 255`. The `#` prefix is optional.
+
+### `CellSize` and `SourceCrop`
+
+```rust
+pub struct CellSize {
+    pub width: u32,
+    pub height: u32,
+}
+
+pub struct SourceCrop {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+```
+
+`CellSize` is the uniform tile size for the grid layout. `SourceCrop` is the source-image
+rectangle that fills a cell; `PlacedImage::crop` carries it, `None` when the image matches
+the cell exactly.
 
 ### `LayoutKind`
 
@@ -195,13 +216,14 @@ pub struct ComposeOptions {
     pub pane_style: PaneStyle,
     pub divider: Option<Divider>,
     pub column_weights: Vec<u32>,
+    pub cell_size: Option<CellSize>,
 }
 ```
 
 Defaults: `layout: VerticalStack`, `spacing: Spacing::default()` (both axes 0),
 `padding: Insets::default()` (all 0),
 `background: RgbaColor::WHITE`, `alignment: Start`, `resize_mode: None`,
-`pane_style: PaneStyle::default()`, `divider: None`, `column_weights: Vec::new()`.
+`pane_style: PaneStyle::default()`, `divider: None`, `column_weights: Vec::new()`, `cell_size: None`.
 `pane_style` is the global fallback: every pane without an `InputImage::style`
 override uses it.
 Note that the CLI uses different defaults for some options — see the
@@ -227,6 +249,34 @@ relative, `[1, 1]` makes all used columns equally wide (the widest natural width
 
 Example: images 40x30, 20x60, 30x30 with `columns: 2` and `column_weights: vec![1, 2]`
 → natural `[40, 20]`, `unit = max(40, 10) = 40`, tracks `[40, 80]`, canvas 120x90.
+
+### Uniform tiles (`cell_size`)
+
+`cell_size` replaces automatic grid sizing with a fixed tile size. It is grid-only and
+is only valid with `LayoutKind::Grid`; setting it on any other layout returns
+`CellSizeRequiresGrid`, and zero dimensions return `InvalidCellSize`. It cannot be
+combined with `column_weights` or `resize_mode` (`CellSizeConflictsWithColumnWeights` /
+`CellSizeConflictsWithResizeMode`).
+
+In cell mode every tile is exactly `width x height`, each track is sized to the cell,
+columns are clamped to the image count, and a partial last row leaves background cells.
+The width and height are not stretched — each image is center-cropped to the cell,
+rounding on the other axis:
+
+```text
+aspect match (sw * ch == sh * cw)  → no crop, the image fills the cell exactly
+sw * ch > sh * cw  (image wider than cell)  → keep sh (height); crop width to
+                                                 width = round(sh * cw / ch), centered on x
+sw * ch < sh * cw  (image narrower than cell) → keep sw (width); crop height to
+                                                 height = round(sw * ch / cw), centered on y
+```
+
+where the rounding is `(num * target + den / 2) / den` (same rule as resize modes) and
+the offset `(source - crop) / 2` floors, dropping a lone odd extra pixel from the right
+or bottom. Upscaling is allowed (a cell larger than the image simply crops a smaller
+source region to fill it) and the crop lives in the plan (`PlacedImage::crop`), not in
+resizing. `cell_size` bypasses `resolve_sizes` and ignores `alignment` (track size equals
+the cell, so the offset is always zero).
 
 ## Functions
 
@@ -277,6 +327,10 @@ rounding) before encoding. Transparent regions render white rather than black.
 | `ColumnWeightsRequireGrid` | `column weights are only supported by the grid layout` |
 | `ColumnWeightCountMismatch { expected, actual }` | `grid received {actual} column weights for {expected} columns` |
 | `ZeroColumnWeight { index }` | `column weight {index} must be at least 1` |
+| `CellSizeRequiresGrid` | `cell size is only supported by the grid layout` |
+| `InvalidCellSize { width, height }` | `cell size {width}x{height} must be at least 1x1` |
+| `CellSizeConflictsWithColumnWeights` | `cell size cannot be combined with column weights` |
+| `CellSizeConflictsWithResizeMode` | `cell size cannot be combined with resize_mode` |
 | `DimensionOverflow` | `image dimension overflow while calculating layout` |
 | `CoordinateOverflow` | `output coordinates overflowed during rendering` |
 | `InvalidOutputBuffer { width, height, expected, actual }` | `output image {width}x{height} has invalid buffer length: expected {expected}, got {actual}` |
@@ -294,6 +348,11 @@ rounding) before encoding. Transparent regions render white rather than black.
 - **Grid** fills row-major and auto-sizes each column to its widest pane and each row
   to its tallest pane; `columns` is clamped to the image count, and a partial last row
   leaves background-colored cells.
+- **Grid cell mode** (`cell_size`) tiles are exact `width x height`, tracks are sized
+  to the cell, and every image is center-cropped to the cell; the crop is carried in
+  the plan (`PlacedImage::crop`) and rendering slices the source region rather than
+  scaling. `alignment` has no effect (the track is the cell), and `resolve_sizes` is
+  bypassed — all `resize_mode` values are rejected as conflicts.
 - **Frames** are overlays drawn inside the placed rectangle: they cover outer pixels
   instead of shrinking the content, so the plan is unchanged.
 - **Corner radius** is a hard-edged mask computed with integer squared distances, no
