@@ -52,7 +52,11 @@ pub fn plan_layout(
         LayoutKind::BeforeAfter => plan_before_after(images, options),
         LayoutKind::Grid { columns } => match options.cell_size {
             Some(cell) => plan_grid_with_cells(images, options, columns, cell),
-            None => plan_grid(&resolve_sizes(images, options.resize_mode)?, options, columns),
+            None => plan_grid(
+                &resolve_sizes(images, options.resize_mode)?,
+                options,
+                columns,
+            ),
         },
     }
 }
@@ -414,13 +418,7 @@ fn plan_grid(
     })
 }
 
-
-fn cover_crop(
-    sw: u32,
-    sh: u32,
-    cw: u32,
-    ch: u32,
-) -> Result<Option<SourceCrop>, ComposeError> {
+fn cover_crop(sw: u32, sh: u32, cw: u32, ch: u32) -> Result<Option<SourceCrop>, ComposeError> {
     if sw == 0 || sh == 0 || cw == 0 || ch == 0 {
         return Err(ComposeError::DimensionOverflow);
     }
@@ -438,13 +436,23 @@ fn cover_crop(
         let height = sh;
         let width = scaled_dimension(sh, cw, ch)?.min(sw).max(1);
         let x = (sw - width) / 2;
-        return Ok(Some(SourceCrop { x, y: 0, width, height }));
+        return Ok(Some(SourceCrop {
+            x,
+            y: 0,
+            width,
+            height,
+        }));
     }
 
     let width = sw;
     let height = scaled_dimension(sw, ch, cw)?.min(sh).max(1);
     let y = (sh - height) / 2;
-    Ok(Some(SourceCrop { x: 0, y, width, height }))
+    Ok(Some(SourceCrop {
+        x: 0,
+        y,
+        width,
+        height,
+    }))
 }
 
 fn plan_grid_with_cells(

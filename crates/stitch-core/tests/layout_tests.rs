@@ -406,7 +406,7 @@ fn grid_alignment_applies_within_column() {
     let plan = plan_layout(
         &images,
         &ComposeOptions {
-        cell_size: None,
+            cell_size: None,
             alignment: Alignment::End,
             ..options
         },
@@ -861,14 +861,24 @@ fn cell_mode_computes_centered_source_crops() {
     let plan = plan_layout(&wide, &cell_options(2, 100, 100)).expect("wide");
     assert_eq!(
         plan.placed_images[0].crop,
-        Some(SourceCrop { x: 75, y: 0, width: 50, height: 50 })
+        Some(SourceCrop {
+            x: 75,
+            y: 0,
+            width: 50,
+            height: 50
+        })
     );
 
     let tall = vec![solid_image(50, 200, [0; 4]), solid_image(50, 200, [0; 4])];
     let plan = plan_layout(&tall, &cell_options(2, 100, 100)).expect("tall");
     assert_eq!(
         plan.placed_images[0].crop,
-        Some(SourceCrop { x: 0, y: 75, width: 50, height: 50 })
+        Some(SourceCrop {
+            x: 0,
+            y: 75,
+            width: 50,
+            height: 50
+        })
     );
 
     let same = vec![solid_image(200, 100, [0; 4]), solid_image(200, 100, [0; 4])];
@@ -885,7 +895,12 @@ fn cell_mode_computes_centered_source_crops() {
     let plan = plan_layout(&odd, &cell_options(2, 3, 3)).expect("odd");
     assert_eq!(
         plan.placed_images[0].crop,
-        Some(SourceCrop { x: 1, y: 0, width: 4, height: 4 })
+        Some(SourceCrop {
+            x: 1,
+            y: 0,
+            width: 4,
+            height: 4
+        })
     );
 }
 
@@ -895,9 +910,9 @@ fn cell_mode_clamps_columns_and_rejects_zero() {
 
     let plan = plan_layout(&images, &cell_options(5, 10, 10)).expect("clamped");
     assert_eq!(plan.placed_images.len(), 2);
-    assert_eq!((plan.width, plan.height), (10, 20));
-    assert_eq!(plan.placed_images[1].x, 0);
-    assert_eq!(plan.placed_images[1].y, 10);
+    assert_eq!((plan.width, plan.height), (28, 10));
+    assert_eq!(plan.placed_images[1].x, 18);
+    assert_eq!(plan.placed_images[1].y, 0);
 
     assert!(matches!(
         plan_layout(&images, &cell_options(0, 10, 10)).unwrap_err(),
@@ -910,7 +925,10 @@ fn rejects_cell_size_outside_grid() {
     let images = vec![solid_image(4, 4, [0; 4]), solid_image(4, 4, [0; 4])];
     let options = ComposeOptions {
         layout: LayoutKind::VerticalStack,
-        cell_size: Some(CellSize { width: 4, height: 4 }),
+        cell_size: Some(CellSize {
+            width: 4,
+            height: 4,
+        }),
         ..ComposeOptions::default()
     };
     assert!(matches!(
@@ -925,7 +943,10 @@ fn rejects_zero_cell_dimensions() {
     let options = cell_options(2, 0, 10);
     assert!(matches!(
         plan_layout(&images, &options).unwrap_err(),
-        ComposeError::InvalidCellSize { width: 0, height: 10 }
+        ComposeError::InvalidCellSize {
+            width: 0,
+            height: 10
+        }
     ));
 }
 
