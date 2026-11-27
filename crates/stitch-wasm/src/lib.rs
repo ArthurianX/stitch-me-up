@@ -9,6 +9,8 @@ use std::collections::BTreeMap;
 
 #[cfg(target_arch = "wasm32")]
 use js_sys::Array;
+#[cfg(any(target_arch = "wasm32", test))]
+use stitch_core::CellSize;
 use stitch_core::{ComposeOptions, PaneStyle};
 // `Insets` is only named by the wasm-only `set_padding`; the tests import it themselves.
 #[cfg(target_arch = "wasm32")]
@@ -108,6 +110,17 @@ impl Composer {
     /// The count must match the column count; pass an empty array for auto sizing.
     pub fn set_column_weights(&mut self, weights: &[u32]) {
         self.apply_column_weights(weights);
+    }
+
+    /// Fixed tile size for the grid layout, center-cropping each image.
+    /// Invalid values (grid-only, non-zero) fail at compose time.
+    pub fn set_cell_size(&mut self, width: u32, height: u32) {
+        self.apply_cell_size(width, height);
+    }
+
+    /// Restore automatic grid sizing.
+    pub fn clear_cell_size(&mut self) {
+        self.apply_clear_cell_size();
     }
 
     /// 0-based input index; stores a complete style override for that pane.
@@ -219,6 +232,14 @@ impl Composer {
         self.options.column_weights = weights.to_vec();
     }
 
+    fn apply_cell_size(&mut self, width: u32, height: u32) {
+        self.options.cell_size = Some(CellSize { width, height });
+    }
+
+    fn apply_clear_cell_size(&mut self) {
+        self.options.cell_size = None;
+    }
+
     /// 0-based input index; complete override, replacing the global style for the pane.
     /// `frame_width == 0` disables the frame but still validates the color.
     fn apply_pane_style(
@@ -328,8 +349,8 @@ fn normalize(value: &str) -> String {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use stitch_core::{
-        Alignment, ComposeOptions, Divider, Frame, InputImage, Insets, LayoutKind, PaneStyle,
-        ResizeMode, RgbaColor, Spacing,
+        Alignment, CellSize, ComposeOptions, Divider, Frame, InputImage, Insets, LayoutKind,
+        PaneStyle, ResizeMode, RgbaColor, Spacing,
     };
 
     use super::{parse_alignment, parse_layout, parse_resize_mode, Composer};
@@ -471,6 +492,24 @@ mod tests {
 
         composer.apply_column_weights(&[]);
         assert!(composer.options.column_weights.is_empty());
+    }
+
+    #[test]
+    fn stores_and_clears_cell_size() {
+        let mut composer = Composer::default();
+        assert_eq!(composer.options.cell_size, None);
+
+        composer.apply_cell_size(320, 400);
+        assert_eq!(
+            composer.options.cell_size,
+            Some(CellSize {
+                width: 320,
+                height: 400
+            })
+        );
+
+        composer.apply_clear_cell_size();
+        assert_eq!(composer.options.cell_size, None);
     }
 
     #[test]
