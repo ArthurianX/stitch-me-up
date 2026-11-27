@@ -440,8 +440,11 @@ fn crop_preserves_alpha_without_tinting() {
     ];
     let source = stitch_core::InputImage::new(3, 1, pixels);
     let images = vec![source.clone(), source];
+    let mut options = cell_grid(2, 2, 1);
+    // Composite over transparency so the alpha pixel is observed, not blended into white.
+    options.background = RgbaColor::TRANSPARENT;
 
-    let composed = compose(&images, &cell_grid(2, 2, 1)).expect("compose");
+    let composed = compose(&images, &options).expect("compose");
 
     // Crop keeps source columns 0..1 (excess 1, offset 0) with no resize.
     assert_eq!(pixel_at(&composed.pixels, 4, 0, 0), [255, 0, 0, 128]);
