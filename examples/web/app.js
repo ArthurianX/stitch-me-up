@@ -15,6 +15,7 @@ import {
   formatBytes,
   downloadName,
   isValidQuality,
+  cellPresetToSize,
 } from "./lib.js";
 
 const $ = (id) => document.getElementById(id);
@@ -292,7 +293,9 @@ async function compose() {
 
     const composer = new state.Composer();
     composer.set_layout(layout, columns);
-    if (layout === "grid") {
+    const presetSize = layout === "grid" ? cellPresetToSize($("cell-preset").value) : null;
+    if (presetSize) composer.set_cell_size(presetSize.width, presetSize.height);
+    if (layout === "grid" && !presetSize) {
       const weights = parseWeights($("weights").value);
       if (weights.length > 0) composer.set_column_weights(new Uint32Array(weights));
     }
@@ -380,7 +383,10 @@ function setLayoutControls() {
   const isGrid = layout === "grid";
   const isBeforeAfter = layout === "before-after";
   $("columns").disabled = !isGrid;
-  $("weights").disabled = !isGrid;
+  const presetSize = cellPresetToSize($("cell-preset").value);
+  $("cell-preset").disabled = !isGrid;
+  if (isGrid && presetSize) $("weights").value = "";
+  $("weights").disabled = !isGrid || presetSize !== null;
   $("divider-width").disabled = !isBeforeAfter;
   $("divider-color").disabled = !isBeforeAfter;
 }
@@ -460,6 +466,7 @@ function wire() {
     el.addEventListener("input", schedule);
     el.addEventListener("change", schedule);
   });
+  $("cell-preset").addEventListener("change", setLayoutControls);
   $("layout").addEventListener("change", () => {
     setLayoutControls();
   setFormatControls();

@@ -21,6 +21,7 @@ import {
   formatBytes,
   downloadName,
   isValidQuality,
+  cellPresetToSize,
 } from "../lib.js";
 
 test("constants match the spec limits", () => {
@@ -180,4 +181,11 @@ test("totalLimit rejects totals over 100 MP", () => {
   assert.equal(totalLimit(99_999_999), null);
   const error = totalLimit(100_000_001);
   assert.match(error, /100/);
+});
+
+test("cellPresetToSize maps presets and falls back to off", () => {
+  assert.deepEqual(cellPresetToSize("square"), { width: 320, height: 320 });
+  assert.deepEqual(cellPresetToSize("portrait"), { width: 320, height: 400 });
+  assert.equal(cellPresetToSize("off"), null);
+  assert.equal(cellPresetToSize("nonsense"), null);
 });

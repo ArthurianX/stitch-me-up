@@ -140,3 +140,13 @@ export function totalLimit(total) {
   }
   return null;
 }
+
+export const CELL_PRESETS = {
+  off: null,
+  square: { width: 320, height: 320 },
+  portrait: { width: 320, height: 400 },
+};
+
+export function cellPresetToSize(preset) {
+  return CELL_PRESETS[preset] ?? null;
+}
