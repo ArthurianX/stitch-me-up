@@ -273,8 +273,7 @@ sw * ch < sh * cw  (image narrower than cell) → keep sw (width); crop height t
 
 where the rounding is `(num * target + den / 2) / den` (same rule as resize modes) and
 the offset `(source - crop) / 2` floors, dropping a lone odd extra pixel from the right
-or bottom. Upscaling is allowed (a cell larger than the image simply crops a smaller
-source region to fill it) and the crop lives in the plan (`PlacedImage::crop`), not in
+or bottom. Upscaling is allowed (a cell larger than the image keeps the full source on the binding axis and the cropped region is scaled to the cell) and the crop lives in the plan (`PlacedImage::crop`), not in
 resizing. `cell_size` bypasses `resolve_sizes` and ignores `alignment` (track size equals
 the cell, so the offset is always zero).
 

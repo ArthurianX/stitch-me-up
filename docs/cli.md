@@ -54,13 +54,12 @@ Value rules:
 - `--column-weights` is only valid with `--layout grid`. It must list exactly
   `--columns` weights, each at least `1`; otherwise the run fails before rendering.
 - `--cell-size` is only valid with `--layout grid`. The separator (`x` or `X`) is
-  case-insensitive and any value with a zero dimension fails with
-  `--cell-size must be at least 1x1`; a malformed value exits `2` with
-  `invalid cell size "<value>"; expected WIDTHxHEIGHT with values of at least 1, e.g. 320x320`.
+  case-insensitive; a malformed value or one with a zero dimension exits `2` at parse
+  time with `invalid cell size "<value>"; expected WIDTHxHEIGHT with values of at least 1, e.g. 320x320`.
   `--cell-size` cannot be combined with `--column-weights` or `--resize-mode`.
   Pre-checks run before loading any input and print a single-line `Error:` message
   without a `Caused by:` chain: `--cell-size is only supported by the grid layout`,
-  `--cell-size must be at least 1x1`, `--cell-size cannot be combined with --column-weights`,
+  `--cell-size must be at least 1x1` (internal safety net for directly constructed `CombineArgs`; the parser rejects zero dimensions before this runs), `--cell-size cannot be combined with --column-weights`,
   `--cell-size cannot be combined with --resize-mode`.
 - `--pane-style` overrides start from the global style fields (`--frame-width`,
   `--frame-color`, `--corner-radius`) and merge per key; key order never matters and a
@@ -178,7 +177,7 @@ without a `Caused by:` chain (these are CLI-level checks, not core errors):
 - `grid layout requires at least 1 column`
 - `--quality only applies to --format jpeg`
 - `--cell-size is only supported by the grid layout`
-- `--cell-size must be at least 1x1`
+- `--cell-size must be at least 1x1` (internal safety net for directly constructed `CombineArgs`; the parser rejects zero dimensions at parse time)
 - `--cell-size cannot be combined with --column-weights`
 - `--cell-size cannot be combined with --resize-mode`
 
