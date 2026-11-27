@@ -170,9 +170,10 @@ fn cell_mode_clamps_columns_and_rejects_zero() {
 
     let plan = plan_layout(&images, &cell_options(5, 10, 10)).expect("clamped");
     assert_eq!(plan.placed_images.len(), 2);
-    assert_eq!((plan.width, plan.height), (10, 20));
-    assert_eq!(plan.placed_images[1].x, 0);
-    assert_eq!(plan.placed_images[1].y, 10);
+    // Requested 5 columns clamp to 2 (image count), so one row: 2*10 + one 8px gap.
+    assert_eq!((plan.width, plan.height), (28, 10));
+    assert_eq!(plan.placed_images[1].x, 18);
+    assert_eq!(plan.placed_images[1].y, 0);
 
     assert!(matches!(
         plan_layout(&images, &cell_options(0, 10, 10)).unwrap_err(),
