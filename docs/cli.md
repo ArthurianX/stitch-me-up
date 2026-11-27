@@ -59,7 +59,9 @@ Value rules:
   `--cell-size` cannot be combined with `--column-weights` or `--resize-mode`.
   Pre-checks run before loading any input and print a single-line `Error:` message
   without a `Caused by:` chain: `--cell-size is only supported by the grid layout`,
-  `--cell-size must be at least 1x1` (internal safety net for directly constructed `CombineArgs`; the parser rejects zero dimensions before this runs), `--cell-size cannot be combined with --column-weights`,
+  `--cell-size must be at least 1x1` (internal safety net for directly constructed
+  `CombineArgs`; the parser rejects zero dimensions before this runs), `--cell-size cannot
+  be combined with --column-weights`,
   `--cell-size cannot be combined with --resize-mode`.
 - `--pane-style` overrides start from the global style fields (`--frame-width`,
   `--frame-color`, `--corner-radius`) and merge per key; key order never matters and a
@@ -177,7 +179,8 @@ without a `Caused by:` chain (these are CLI-level checks, not core errors):
 - `grid layout requires at least 1 column`
 - `--quality only applies to --format jpeg`
 - `--cell-size is only supported by the grid layout`
-- `--cell-size must be at least 1x1` (internal safety net for directly constructed `CombineArgs`; the parser rejects zero dimensions at parse time)
+- `--cell-size must be at least 1x1` (internal safety net for directly constructed
+  `CombineArgs`; the parser rejects zero dimensions at parse time)
 - `--cell-size cannot be combined with --column-weights`
 - `--cell-size cannot be combined with --resize-mode`
 
