@@ -5,11 +5,29 @@ use std::path::PathBuf;
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use stitch_core::{
-    compose, load_image_from_path, save_jpeg, save_png, Alignment, ComposeOptions, Divider, Frame,
-    Insets, LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
+    compose, load_image_from_path, save_jpeg, save_png, Alignment, CellSize, ComposeOptions,
+    Divider, Frame, Insets, LayoutKind, PaneStyle, ResizeMode, RgbaColor, Spacing,
 };
 
 pub use color::parse_rgba_color;
+
+pub fn parse_cell_size(value: &str) -> Result<CellSize, String> {
+    let invalid = || {
+        format!(
+            "invalid cell size \"{value}\"; expected WIDTHxHEIGHT with values of at least 1, e.g. 320x320"
+        )
+    };
+    let (width, height) = value.split_once(['x', 'X']).ok_or_else(invalid)?;
+    if height.contains(['x', 'X']) {
+        return Err(invalid());
+    }
+    let width: u32 = width.parse().map_err(|_| invalid())?;
+    let height: u32 = height.parse().map_err(|_| invalid())?;
+    if width == 0 || height == 0 {
+        return Err(invalid());
+    }
+    Ok(CellSize { width, height })
+}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -121,6 +139,14 @@ pub struct CombineArgs {
     pub column_weights: Vec<u32>,
 
     #[arg(
+        long,
+        value_name = "WIDTHxHEIGHT",
+        value_parser = parse_cell_size,
+        help = "Fixed tile size for the grid layout, center-cropping each image (e.g. 320x320)"
+    )]
+    pub cell_size: Option<CellSize>,
+
+    #[arg(
         long = "pane-style",
         value_name = "INDEX:KEY=VALUE[,...]",
         help = "Per-image decoration override, 1-based and repeatable, e.g. \"1:frame-width=4,frame-color=#ff0000\" (quote specs containing #)"
@@ -217,6 +243,21 @@ pub fn combine(args: CombineArgs) -> Result<()> {
         bail!("grid layout requires at least 1 column");
     }
 
+    if let Some(cell) = args.cell_size {
+        if !matches!(args.layout, LayoutArg::Grid) {
+            bail!("--cell-size is only supported by the grid layout");
+        }
+        if cell.width == 0 || cell.height == 0 {
+            bail!("--cell-size must be at least 1x1");
+        }
+        if !args.column_weights.is_empty() {
+            bail!("--cell-size cannot be combined with --column-weights");
+        }
+        if !matches!(args.resize_mode, ResizeModeArg::None) {
+            bail!("--cell-size cannot be combined with --resize-mode");
+        }
+    }
+
     let overrides = pane_style_overrides(
         &args.pane_styles,
         args.inputs.len(),
@@ -241,7 +282,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
     }
 
     let options = ComposeOptions {
-        cell_size: None,
+        cell_size: args.cell_size,
         layout: layout_kind(args.layout, args.columns),
         spacing: spacing(args.spacing, args.spacing_x, args.spacing_y),
         padding: insets(
@@ -717,6 +758,7 @@ mod tests {
             corner_radius: 0,
             divider_width: 0,
             divider_color: RgbaColor::WHITE,
+            cell_size: None,
         });
 
         assert!(result.is_err());
@@ -753,6 +795,7 @@ mod tests {
             corner_radius: 0,
             divider_width: 0,
             divider_color: RgbaColor::WHITE,
+            cell_size: None,
         });
 
         assert!(result.is_err());
@@ -1170,6 +1213,7 @@ mod tests {
             corner_radius: 0,
             divider_width: 0,
             divider_color: RgbaColor::WHITE,
+            cell_size: None,
         };
 
         combine(args).unwrap();
@@ -1183,5 +1227,131 @@ mod tests {
         );
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn parses_cell_size_flag() {
+        let cli = Cli::parse_from([
+            "stitch-me-up",
+            "combine",
+            "--layout",
+            "grid",
+            "--columns",
+            "3",
+            "--cell-size",
+            "320x320",
+            "--output",
+            "out.png",
+            "a.png",
+            "b.png",
+        ]);
+        match cli.command {
+            Commands::Combine(args) => {
+                assert_eq!(
+                    args.cell_size,
+                    Some(CellSize {
+                        width: 320,
+                        height: 320
+                    })
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn accepts_uppercase_cell_separator() {
+        assert_eq!(
+            parse_cell_size("320X240"),
+            Ok(CellSize {
+                width: 320,
+                height: 240
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_cell_sizes() {
+        for value in ["320", "320x", "x320", "0x10", "10x0", "a x b", "320x10x2"] {
+            let error = parse_cell_size(value).unwrap_err();
+            assert!(error.contains("expected WIDTHxHEIGHT"), "{value}: {error}");
+        }
+    }
+
+    fn cell_args(cell_size: CellSize) -> CombineArgs {
+        CombineArgs {
+            inputs: vec!["a.png".into(), "b.png".into()],
+            output: "out.png".into(),
+            layout: LayoutArg::Grid,
+            format: OutputFormatArg::Png,
+            quality: None,
+            spacing: 0,
+            spacing_x: None,
+            spacing_y: None,
+            padding: 0,
+            padding_top: None,
+            padding_right: None,
+            padding_bottom: None,
+            padding_left: None,
+            background: RgbaColor::WHITE,
+            alignment: AlignmentArg::Center,
+            resize_mode: ResizeModeArg::None,
+            columns: 2,
+            column_weights: Vec::new(),
+            pane_styles: Vec::new(),
+            frame_width: 0,
+            frame_color: RgbaColor::WHITE,
+            corner_radius: 0,
+            divider_width: 0,
+            divider_color: RgbaColor::WHITE,
+            cell_size: Some(cell_size),
+        }
+    }
+
+    #[test]
+    fn rejects_cell_size_outside_grid_before_io() {
+        let mut args = cell_args(CellSize {
+            width: 10,
+            height: 10,
+        });
+        args.layout = LayoutArg::Vertical;
+        assert_eq!(
+            combine(args).unwrap_err().to_string(),
+            "--cell-size is only supported by the grid layout"
+        );
+    }
+
+    #[test]
+    fn rejects_cell_size_conflicts_before_io() {
+        let mut args = cell_args(CellSize {
+            width: 10,
+            height: 10,
+        });
+        args.column_weights = vec![1, 1];
+        assert_eq!(
+            combine(args).unwrap_err().to_string(),
+            "--cell-size cannot be combined with --column-weights"
+        );
+
+        let mut args = cell_args(CellSize {
+            width: 10,
+            height: 10,
+        });
+        args.resize_mode = ResizeModeArg::FitToSameHeight;
+        assert_eq!(
+            combine(args).unwrap_err().to_string(),
+            "--cell-size cannot be combined with --resize-mode"
+        );
+    }
+
+    #[test]
+    fn rejects_zero_cell_size_before_io() {
+        let args = cell_args(CellSize {
+            width: 0,
+            height: 10,
+        });
+        assert_eq!(
+            combine(args).unwrap_err().to_string(),
+            "--cell-size must be at least 1x1"
+        );
     }
 }
