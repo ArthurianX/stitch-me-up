@@ -14,6 +14,7 @@ fn renders_background_and_stacked_pixels() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(1),
         padding: Insets::all(1),
@@ -61,6 +62,7 @@ fn renders_grid_cells_and_background() {
         solid_image(1, 1, [255, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 2 },
         spacing: Spacing::all(1),
         padding: Insets::all(1),
@@ -114,6 +116,7 @@ fn renders_before_after_with_equal_pane_heights() {
         solid_image(1, 4, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(1),
         padding: Insets::all(0),
@@ -158,6 +161,7 @@ fn centers_smaller_images_on_vertical_layout() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::all(0),
@@ -194,6 +198,7 @@ fn applies_fit_to_same_height_during_rendering() {
         solid_image(1, 2, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::HorizontalStack,
         spacing: Spacing::all(0),
         padding: Insets::all(0),
@@ -226,6 +231,7 @@ fn applies_fit_to_same_width_during_rendering() {
         solid_image(1, 1, [0, 0, 255, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::all(0),
@@ -262,6 +268,7 @@ fn blends_semi_transparent_source_over_background() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -299,6 +306,7 @@ fn fully_transparent_pixels_leave_background() {
         solid_image(1, 1, [0, 0, 0, 0]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -334,6 +342,7 @@ fn semi_transparent_source_over_transparent_background_keeps_color() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -369,6 +378,7 @@ fn overlapping_semi_transparent_planes_blend() {
                 y: 0,
                 width: 1,
                 height: 1,
+                crop: None,
             },
             PlacedImage {
                 index: 1,
@@ -376,10 +386,12 @@ fn overlapping_semi_transparent_planes_blend() {
                 y: 0,
                 width: 1,
                 height: 1,
+                crop: None,
             },
         ],
     };
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -406,6 +418,7 @@ fn low_alpha_blend_uses_exact_weighting() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -439,6 +452,7 @@ fn red_and_filler(size: u32) -> Vec<stitch_core::InputImage> {
 
 fn pane_options(pane_style: PaneStyle, background: RgbaColor) -> ComposeOptions {
     ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -459,6 +473,7 @@ fn default_pane_style_keeps_existing_output() {
     ];
     let plain = ComposeOptions::default();
     let explicit = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -697,6 +712,7 @@ fn frame_covers_pane_when_frame_exceeds_size() {
 
 fn before_after_options(spacing: u32, padding: u32, divider: Option<Divider>) -> ComposeOptions {
     ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(spacing),
         padding: Insets::all(padding),
@@ -1007,6 +1023,7 @@ fn resize_does_not_bleed_transparent_color_into_visible_edges() {
     let image_a = stitch_core::InputImage::new(5, 4, pixels);
     let image_b = solid_image(5, 8, [0, 255, 0, 255]);
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(0),
         padding: Insets::default(),

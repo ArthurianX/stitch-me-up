@@ -24,6 +24,14 @@ pub enum ComposeError {
     ColumnWeightCountMismatch { expected: usize, actual: usize },
     #[error("column weight {index} must be at least 1")]
     ZeroColumnWeight { index: usize },
+    #[error("cell size is only supported by the grid layout")]
+    CellSizeRequiresGrid,
+    #[error("cell size {width}x{height} must be at least 1x1")]
+    InvalidCellSize { width: u32, height: u32 },
+    #[error("cell size cannot be combined with column weights")]
+    CellSizeConflictsWithColumnWeights,
+    #[error("cell size cannot be combined with resize_mode")]
+    CellSizeConflictsWithResizeMode,
     #[error("image dimension overflow while calculating layout")]
     DimensionOverflow,
     #[error("output coordinates overflowed during rendering")]

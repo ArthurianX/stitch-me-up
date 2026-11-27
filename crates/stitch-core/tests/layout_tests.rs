@@ -2,8 +2,8 @@ mod helpers;
 
 use helpers::solid_image;
 use stitch_core::{
-    plan_layout, Alignment, ComposeError, ComposeOptions, Divider, Insets, LayoutKind, PaneStyle,
-    ResizeMode, RgbaColor, Spacing,
+    plan_layout, Alignment, CellSize, ComposeError, ComposeOptions, Divider, Insets, LayoutKind,
+    PaneStyle, ResizeMode, RgbaColor, SourceCrop, Spacing,
 };
 
 #[test]
@@ -40,6 +40,7 @@ fn plans_vertical_stack_with_spacing_padding_and_center_alignment() {
         solid_image(6, 8, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(3),
         padding: Insets {
@@ -74,6 +75,7 @@ fn plans_horizontal_stack_with_end_alignment() {
         solid_image(6, 3, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::HorizontalStack,
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -102,6 +104,7 @@ fn fit_to_same_width_resizes_height_in_layout() {
         solid_image(2, 6, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -130,6 +133,7 @@ fn fit_to_same_height_resizes_width_in_layout() {
         solid_image(6, 3, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::HorizontalStack,
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -157,6 +161,7 @@ fn before_after_equalizes_pane_heights() {
         solid_image(3, 3, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(4),
         padding: Insets::all(2),
@@ -189,6 +194,7 @@ fn before_after_equalizes_pane_heights() {
 #[test]
 fn before_after_requires_exactly_two_images() {
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         ..ComposeOptions::default()
     };
@@ -213,6 +219,7 @@ fn before_after_scales_shorter_pane_to_taller_height() {
         solid_image(6, 4, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -248,6 +255,7 @@ fn before_after_ignores_resize_mode() {
         solid_image(6, 4, [0, 255, 0, 255]),
     ];
     let base = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -259,6 +267,7 @@ fn before_after_ignores_resize_mode() {
         column_weights: Vec::new(),
     };
     let resized = ComposeOptions {
+        cell_size: None,
         resize_mode: ResizeMode::FitToSameWidth,
         pane_style: PaneStyle::default(),
         divider: None,
@@ -278,6 +287,7 @@ fn grid_reports_zero_column_error() {
         solid_image(1, 1, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 0 },
         ..ComposeOptions::default()
     };
@@ -296,6 +306,7 @@ fn plans_grid_row_major_with_track_sizes() {
         solid_image(8, 6, [255, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 2 },
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -333,6 +344,7 @@ fn grid_with_more_columns_than_images_uses_one_row() {
         solid_image(6, 2, [0, 0, 255, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 5 },
         spacing: Spacing::all(3),
         padding: Insets::all(2),
@@ -371,6 +383,7 @@ fn grid_alignment_applies_within_column() {
         solid_image(4, 2, [255, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 2 },
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -393,6 +406,7 @@ fn grid_alignment_applies_within_column() {
     let plan = plan_layout(
         &images,
         &ComposeOptions {
+        cell_size: None,
             alignment: Alignment::End,
             ..options
         },
@@ -412,6 +426,7 @@ fn single_row_grid_matches_horizontal_flow() {
         solid_image(2, 2, [0, 255, 0, 255]),
     ];
     let grid_options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 2 },
         spacing: Spacing::all(2),
         padding: Insets::all(1),
@@ -423,6 +438,7 @@ fn single_row_grid_matches_horizontal_flow() {
         column_weights: Vec::new(),
     };
     let horizontal_options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::HorizontalStack,
         ..grid_options.clone()
     };
@@ -440,6 +456,7 @@ fn divider_requires_before_after() {
         solid_image(4, 4, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         divider: Some(Divider {
             width: 4,
@@ -460,6 +477,7 @@ fn divider_wider_than_gap_is_rejected() {
         solid_image(4, 4, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(2),
         padding: Insets::default(),
@@ -489,6 +507,7 @@ fn divider_equal_to_gap_is_accepted() {
         solid_image(4, 4, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(2),
         padding: Insets::default(),
@@ -522,6 +541,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
         solid_image(4, 4, [0, 255, 0, 255]),
     ];
     let before_after = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing::all(0),
         padding: Insets::default(),
@@ -542,6 +562,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
     assert_eq!(plan.placed_images[1].x, 4);
 
     let no_divider = ComposeOptions {
+        cell_size: None,
         divider: None,
         ..before_after.clone()
     };
@@ -549,6 +570,7 @@ fn zero_width_divider_is_allowed_without_spacing() {
 
     // The layout check keys on `Some(_)` alone, so a zero-width divider still errors elsewhere.
     let vertical = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         ..before_after
     };
@@ -565,6 +587,7 @@ fn vertical_uses_only_vertical_spacing() {
         solid_image(2, 2, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing { x: 50, y: 3 },
         padding: Insets::default(),
@@ -590,6 +613,7 @@ fn horizontal_uses_only_horizontal_spacing() {
         solid_image(2, 2, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::HorizontalStack,
         spacing: Spacing { x: 3, y: 50 },
         padding: Insets::default(),
@@ -614,6 +638,7 @@ fn grid_uses_per_axis_spacing() {
         .map(|index| solid_image(2, 2, [index as u8 * 40, 60, 120, 255]))
         .collect::<Vec<_>>();
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns: 2 },
         spacing: Spacing { x: 5, y: 7 },
         padding: Insets::default(),
@@ -644,6 +669,7 @@ fn before_after_uses_horizontal_spacing() {
         solid_image(2, 2, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::BeforeAfter,
         spacing: Spacing { x: 6, y: 40 },
         padding: Insets::default(),
@@ -664,6 +690,7 @@ fn before_after_uses_horizontal_spacing() {
 
 fn grid_weight_options(columns: u32, weights: Vec<u32>) -> ComposeOptions {
     ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::Grid { columns },
         spacing: Spacing::default(),
         padding: Insets::default(),
@@ -720,6 +747,7 @@ fn grid_weights_never_shrink_below_content() {
         solid_image(10, 10, [0, 255, 0, 255]),
     ];
     let options = ComposeOptions {
+        cell_size: None,
         alignment: Alignment::Start,
         ..grid_weight_options(2, vec![2, 1])
     };
@@ -756,6 +784,7 @@ fn grid_weights_reject_zero() {
 #[test]
 fn column_weights_require_grid_layout() {
     let options = ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         ..grid_weight_options(2, vec![1, 1])
     };
@@ -780,4 +809,145 @@ fn empty_column_weights_keep_auto_sizing() {
     assert_eq!(plan.placed_images[1].y, 0);
     assert_eq!(plan.placed_images[2].x, 5);
     assert_eq!(plan.placed_images[2].y, 60);
+}
+
+fn cell_options(columns: u32, width: u32, height: u32) -> ComposeOptions {
+    ComposeOptions {
+        layout: LayoutKind::Grid { columns },
+        spacing: Spacing::all(8),
+        padding: Insets::default(),
+        alignment: Alignment::Center,
+        cell_size: Some(CellSize { width, height }),
+        ..ComposeOptions::default()
+    }
+}
+
+#[test]
+fn plans_uniform_grid_cells_for_six_images() {
+    let images = (0..6u32)
+        .map(|i| solid_image(40 + i * 10, 30 + i * 5, [i as u8, 0, 0, 255]))
+        .collect::<Vec<_>>();
+    let plan = plan_layout(&images, &cell_options(3, 320, 320)).expect("cell grid");
+
+    assert_eq!((plan.width, plan.height), (976, 648));
+    assert_eq!(plan.placed_images.len(), 6);
+    for (index, placed) in plan.placed_images.iter().enumerate() {
+        assert_eq!((placed.width, placed.height), (320, 320));
+        assert_eq!(placed.x, (index as u32 % 3) * 328);
+        assert_eq!(placed.y, (index as u32 / 3) * 328);
+    }
+}
+
+#[test]
+fn cell_mode_keeps_padding_spacing_and_partial_rows() {
+    let images = (0..4u32)
+        .map(|_| solid_image(8, 8, [0, 255, 0, 255]))
+        .collect::<Vec<_>>();
+    let options = ComposeOptions {
+        spacing: Spacing { x: 2, y: 3 },
+        padding: Insets::all(5),
+        ..cell_options(3, 10, 20)
+    };
+    let plan = plan_layout(&images, &options).expect("cell grid");
+
+    assert_eq!((plan.width, plan.height), (44, 53));
+    let last = &plan.placed_images[3];
+    assert_eq!((last.x, last.y), (5, 28));
+}
+
+#[test]
+fn cell_mode_computes_centered_source_crops() {
+    let wide = vec![solid_image(200, 50, [0; 4]), solid_image(200, 50, [0; 4])];
+    let plan = plan_layout(&wide, &cell_options(2, 100, 100)).expect("wide");
+    assert_eq!(
+        plan.placed_images[0].crop,
+        Some(SourceCrop { x: 75, y: 0, width: 50, height: 50 })
+    );
+
+    let tall = vec![solid_image(50, 200, [0; 4]), solid_image(50, 200, [0; 4])];
+    let plan = plan_layout(&tall, &cell_options(2, 100, 100)).expect("tall");
+    assert_eq!(
+        plan.placed_images[0].crop,
+        Some(SourceCrop { x: 0, y: 75, width: 50, height: 50 })
+    );
+
+    let same = vec![solid_image(200, 100, [0; 4]), solid_image(200, 100, [0; 4])];
+    let plan = plan_layout(&same, &cell_options(2, 100, 50)).expect("same aspect");
+    assert_eq!(plan.placed_images[0].crop, None);
+
+    let exact = vec![solid_image(100, 100, [0; 4]), solid_image(100, 100, [0; 4])];
+    let plan = plan_layout(&exact, &cell_options(2, 100, 100)).expect("exact");
+    assert_eq!(plan.placed_images[0].crop, None);
+
+    // Odd excess: 7 wide → 4 wide leaves 3 columns; floor offset 1 drops one from
+    // the left and two from the right (the extra pixel goes to the right edge).
+    let odd = vec![solid_image(7, 4, [0; 4]), solid_image(7, 4, [0; 4])];
+    let plan = plan_layout(&odd, &cell_options(2, 3, 3)).expect("odd");
+    assert_eq!(
+        plan.placed_images[0].crop,
+        Some(SourceCrop { x: 1, y: 0, width: 4, height: 4 })
+    );
+}
+
+#[test]
+fn cell_mode_clamps_columns_and_rejects_zero() {
+    let images = vec![solid_image(4, 4, [0; 4]), solid_image(4, 4, [0; 4])];
+
+    let plan = plan_layout(&images, &cell_options(5, 10, 10)).expect("clamped");
+    assert_eq!(plan.placed_images.len(), 2);
+    assert_eq!((plan.width, plan.height), (10, 20));
+    assert_eq!(plan.placed_images[1].x, 0);
+    assert_eq!(plan.placed_images[1].y, 10);
+
+    assert!(matches!(
+        plan_layout(&images, &cell_options(0, 10, 10)).unwrap_err(),
+        ComposeError::InvalidGridColumns
+    ));
+}
+
+#[test]
+fn rejects_cell_size_outside_grid() {
+    let images = vec![solid_image(4, 4, [0; 4]), solid_image(4, 4, [0; 4])];
+    let options = ComposeOptions {
+        layout: LayoutKind::VerticalStack,
+        cell_size: Some(CellSize { width: 4, height: 4 }),
+        ..ComposeOptions::default()
+    };
+    assert!(matches!(
+        plan_layout(&images, &options).unwrap_err(),
+        ComposeError::CellSizeRequiresGrid
+    ));
+}
+
+#[test]
+fn rejects_zero_cell_dimensions() {
+    let images = vec![solid_image(4, 4, [0; 4]), solid_image(4, 4, [0; 4])];
+    let options = cell_options(2, 0, 10);
+    assert!(matches!(
+        plan_layout(&images, &options).unwrap_err(),
+        ComposeError::InvalidCellSize { width: 0, height: 10 }
+    ));
+}
+
+#[test]
+fn rejects_cell_size_conflicts() {
+    let images = vec![solid_image(4, 4, [0; 4]), solid_image(4, 4, [0; 4])];
+
+    let weights = ComposeOptions {
+        column_weights: vec![1, 1],
+        ..cell_options(2, 10, 10)
+    };
+    assert!(matches!(
+        plan_layout(&images, &weights).unwrap_err(),
+        ComposeError::CellSizeConflictsWithColumnWeights
+    ));
+
+    let resize = ComposeOptions {
+        resize_mode: ResizeMode::FitToSameWidth,
+        ..cell_options(2, 10, 10)
+    };
+    assert!(matches!(
+        plan_layout(&images, &resize).unwrap_err(),
+        ComposeError::CellSizeConflictsWithResizeMode
+    ));
 }

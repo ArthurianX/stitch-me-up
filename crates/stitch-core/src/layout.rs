@@ -1,6 +1,7 @@
 use crate::error::ComposeError;
 use crate::types::{
-    Alignment, CanvasPlan, ComposeOptions, InputImage, LayoutKind, PlacedImage, ResizeMode,
+    Alignment, CanvasPlan, CellSize, ComposeOptions, InputImage, LayoutKind, PlacedImage,
+    ResizeMode, SourceCrop,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,6 +24,24 @@ pub fn plan_layout(
         return Err(ComposeError::ColumnWeightsRequireGrid);
     }
 
+    if let Some(cell) = options.cell_size {
+        if !matches!(options.layout, LayoutKind::Grid { .. }) {
+            return Err(ComposeError::CellSizeRequiresGrid);
+        }
+        if cell.width == 0 || cell.height == 0 {
+            return Err(ComposeError::InvalidCellSize {
+                width: cell.width,
+                height: cell.height,
+            });
+        }
+        if !options.column_weights.is_empty() {
+            return Err(ComposeError::CellSizeConflictsWithColumnWeights);
+        }
+        if options.resize_mode != ResizeMode::None {
+            return Err(ComposeError::CellSizeConflictsWithResizeMode);
+        }
+    }
+
     match options.layout {
         LayoutKind::VerticalStack => {
             plan_vertical(&resolve_sizes(images, options.resize_mode)?, options)
@@ -31,16 +50,10 @@ pub fn plan_layout(
             plan_horizontal(&resolve_sizes(images, options.resize_mode)?, options)
         }
         LayoutKind::BeforeAfter => plan_before_after(images, options),
-        LayoutKind::Grid { columns } => {
-            if columns == 0 {
-                return Err(ComposeError::InvalidGridColumns);
-            }
-            plan_grid(
-                &resolve_sizes(images, options.resize_mode)?,
-                options,
-                columns,
-            )
-        }
+        LayoutKind::Grid { columns } => match options.cell_size {
+            Some(cell) => plan_grid_with_cells(images, options, columns, cell),
+            None => plan_grid(&resolve_sizes(images, options.resize_mode)?, options, columns),
+        },
     }
 }
 
@@ -176,6 +189,7 @@ fn plan_vertical(
             y,
             width: size.width,
             height: size.height,
+            crop: None,
         });
 
         y = y
@@ -227,6 +241,7 @@ fn plan_horizontal(
             y,
             width: size.width,
             height: size.height,
+            crop: None,
         });
 
         x = x
@@ -388,6 +403,99 @@ fn plan_grid(
             y: row_offsets[row],
             width: size.width,
             height: size.height,
+            crop: None,
+        });
+    }
+
+    Ok(CanvasPlan {
+        width: canvas_width,
+        height: canvas_height,
+        placed_images,
+    })
+}
+
+
+fn cover_crop(
+    sw: u32,
+    sh: u32,
+    cw: u32,
+    ch: u32,
+) -> Result<Option<SourceCrop>, ComposeError> {
+    if sw == 0 || sh == 0 || cw == 0 || ch == 0 {
+        return Err(ComposeError::DimensionOverflow);
+    }
+
+    let sw64 = u64::from(sw);
+    let sh64 = u64::from(sh);
+    let cw64 = u64::from(cw);
+    let ch64 = u64::from(ch);
+
+    if sw64 * ch64 == sh64 * cw64 {
+        return Ok(None);
+    }
+
+    if sw64 * ch64 > sh64 * cw64 {
+        let height = sh;
+        let width = scaled_dimension(sh, cw, ch)?.min(sw).max(1);
+        let x = (sw - width) / 2;
+        return Ok(Some(SourceCrop { x, y: 0, width, height }));
+    }
+
+    let width = sw;
+    let height = scaled_dimension(sw, ch, cw)?.min(sh).max(1);
+    let y = (sh - height) / 2;
+    Ok(Some(SourceCrop { x: 0, y, width, height }))
+}
+
+fn plan_grid_with_cells(
+    images: &[InputImage],
+    options: &ComposeOptions,
+    columns: u32,
+    cell: CellSize,
+) -> Result<CanvasPlan, ComposeError> {
+    if columns == 0 {
+        return Err(ComposeError::InvalidGridColumns);
+    }
+
+    let requested = usize::try_from(columns).map_err(|_| ComposeError::InvalidGridColumns)?;
+    let columns = requested.min(images.len()).max(1);
+    let rows = images.len().div_ceil(columns);
+
+    let column_widths = vec![cell.width; columns];
+    let row_heights = vec![cell.height; rows];
+
+    let content_width = sum_dimensions(column_widths.iter().copied(), options.spacing.x)?;
+    let content_height = sum_dimensions(row_heights.iter().copied(), options.spacing.y)?;
+
+    let canvas_width =
+        padded_dimension(content_width, options.padding.left, options.padding.right)?;
+    let canvas_height =
+        padded_dimension(content_height, options.padding.top, options.padding.bottom)?;
+
+    let column_offsets = track_offsets(&column_widths, options.padding.left, options.spacing.x)?;
+    let row_offsets = track_offsets(&row_heights, options.padding.top, options.spacing.y)?;
+
+    let mut placed_images = Vec::with_capacity(images.len());
+
+    for (index, image) in images.iter().enumerate() {
+        let column = index % columns;
+        let row = index / columns;
+
+        let x = column_offsets[column]
+            .checked_add(aligned_offset(
+                column_widths[column],
+                cell.width,
+                options.alignment,
+            )?)
+            .ok_or(ComposeError::DimensionOverflow)?;
+
+        placed_images.push(PlacedImage {
+            index,
+            x,
+            y: row_offsets[row],
+            width: cell.width,
+            height: cell.height,
+            crop: cover_crop(image.width, image.height, cell.width, cell.height)?,
         });
     }
 

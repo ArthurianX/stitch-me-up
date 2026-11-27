@@ -20,6 +20,20 @@ pub enum Alignment {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CellSize {
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceCrop {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResizeMode {
     None,
     FitToSameWidth,
@@ -150,6 +164,7 @@ pub struct ComposeOptions {
     pub pane_style: PaneStyle,
     pub divider: Option<Divider>,
     pub column_weights: Vec<u32>,
+    pub cell_size: Option<CellSize>,
 }
 
 impl Default for ComposeOptions {
@@ -164,6 +179,7 @@ impl Default for ComposeOptions {
             pane_style: PaneStyle::default(),
             divider: None,
             column_weights: Vec::new(),
+            cell_size: None,
         }
     }
 }
@@ -202,6 +218,7 @@ pub struct PlacedImage {
     pub y: u32,
     pub width: u32,
     pub height: u32,
+    pub crop: Option<SourceCrop>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

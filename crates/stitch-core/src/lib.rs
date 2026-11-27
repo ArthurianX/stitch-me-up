@@ -11,6 +11,7 @@ pub use image_io::{
     encode_jpeg, encode_png, load_image_from_bytes, load_image_from_path, save_jpeg, save_png,
 };
 pub use types::{
-    Alignment, CanvasPlan, ComposeOptions, ComposedImage, Divider, Frame, HexColorError,
-    InputImage, Insets, LayoutKind, PaneStyle, PlacedImage, ResizeMode, RgbaColor, Spacing,
+    Alignment, CanvasPlan, CellSize, ComposeOptions, ComposedImage, Divider, Frame, HexColorError,
+    InputImage, Insets, LayoutKind, PaneStyle, PlacedImage, ResizeMode, RgbaColor, SourceCrop,
+    Spacing,
 };

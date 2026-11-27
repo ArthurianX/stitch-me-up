@@ -241,6 +241,7 @@ pub fn combine(args: CombineArgs) -> Result<()> {
     }
 
     let options = ComposeOptions {
+        cell_size: None,
         layout: layout_kind(args.layout, args.columns),
         spacing: spacing(args.spacing, args.spacing_x, args.spacing_y),
         padding: insets(

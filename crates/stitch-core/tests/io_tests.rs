@@ -69,6 +69,7 @@ fn png_bytes(image: &InputImage) -> Vec<u8> {
 
 fn vertical_options() -> ComposeOptions {
     ComposeOptions {
+        cell_size: None,
         layout: LayoutKind::VerticalStack,
         spacing: Spacing::all(1),
         padding: Insets::default(),
